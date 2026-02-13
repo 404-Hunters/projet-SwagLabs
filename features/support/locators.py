@@ -6,15 +6,17 @@ from selenium.webdriver.common.by import By
 
 class LoginPageLocators:
     """Locators pour la page de connexion"""
-    USERNAME_INPUT = (By.ID, "username")
+    USERNAME_INPUT = (By.ID, "user-name")
     PASSWORD_INPUT = (By.ID, "password")
     LOGIN_BUTTON = (By.CSS_SELECTOR, "button[type='submit']")
     ERROR_MESSAGE = (By.CSS_SELECTOR, "h3[data-test='error']")
     SUCCESS_MSG = (By.CSS_SELECTOR, "div.flash.success")
+    FORM = (By.CSS_SELECTOR, "form")
 
 
 class InventoryPageLocators:
     """Locators pour la page catalogue/inventaire"""
+    INVENTORY_LIST = (By.CLASS_NAME, "inventory_list")
     INVENTORY_CONTAINER = (By.ID, "inventory_container")
     INVENTORY_ITEMS = (By.CLASS_NAME, "inventory_item")
     PRODUCT_NAME = (By.CLASS_NAME, "inventory_item_name")

@@ -63,6 +63,28 @@ def wait_for_element(driver, locator, timeout=10):
     except TimeoutException:
         print(f"Élément non trouvé après {timeout} secondes: {locator}")
         return None
+    
+
+def wait_for_elements(driver, locator, timeout=10):
+    """
+    Attend que plusieurs éléments soient visibles
+    
+    Args:
+        driver: Instance du WebDriver
+        locator: Tuple (By.METHOD, "selector")
+        timeout: Temps d'attente maximum en secondes
+    Returns:
+        Liste de WebElements trouvés ou liste vide
+    """
+    try:
+        elements = WebDriverWait(driver, timeout).until(
+            EC.visibility_of_all_elements_located(locator)
+        )
+        return elements
+    except TimeoutException:
+        print(f"Aucun élément visible après {timeout} secondes: {locator}")
+        return []
+
 
 
 def wait_for_element_clickable(driver, locator, timeout=10):
@@ -107,7 +129,7 @@ def wait_for_element_visible(driver, locator, timeout=10):
     except TimeoutException:
         print(f"Élément non visible après {timeout} secondes: {locator}")
         return None
-
+    
 
 def is_element_present(driver, locator):
     """
@@ -181,3 +203,24 @@ def send_keys_to_element(driver, locator, text, timeout=10):
         element.send_keys(text)
         return True
     return False
+
+def wait_for_url_contains(driver, expected_url_part, timeout=10):
+    """
+    Attend que l'URL actuelle contienne une partie spécifique
+    
+    Args:
+        driver: Instance du WebDriver
+        expected_url_part: Partie de l'URL attendue
+        timeout: Temps d'attente maximum en secondes
+        
+    Returns:
+        bool: True si l'URL contient la partie attendue, False sinon
+    """
+    try:
+        WebDriverWait(driver, timeout).until(
+            lambda d: expected_url_part in d.current_url
+        )
+        return True
+    except TimeoutException:
+        print(f"L'URL ne contient pas '{expected_url_part}' après {timeout} secondes. URL actuelle : {driver.current_url}")
+        return False
