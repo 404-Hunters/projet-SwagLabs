@@ -44,3 +44,4 @@ def step_verify_products_displayed(context):
     products = wait_for_elements(context.browser, (By.CLASS_NAME, "inventory_item"))
     
     assert len(products) > 0, "Aucun produit trouvé sur la page"
+
