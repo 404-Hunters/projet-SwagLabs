@@ -45,3 +45,13 @@ def step_verify_products_displayed(context):
     
     assert len(products) > 0, "Aucun produit trouvé sur la page"
 
+@then('je reste sur la page Login')
+def step_verify_stay_on_login_page(context):
+    assert wait_for_url_contains(context.browser, "saucedemo.com"), "L'utilisateur n'est pas resté sur la page Login"
+
+# pour locked_out_user un message d'erreur : 
+@then('le message d\'erreur "{expected_error}" est affiché')
+def step_verify_locked_out_error(context, expected_error):
+    error_message = wait_for_element(context.browser, (By.CLASS_NAME, "error-message-container"))
+    assert error_message is not None, "Message d'erreur non trouvé"
+    assert expected_error in error_message.text

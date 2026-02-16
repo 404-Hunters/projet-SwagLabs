@@ -15,9 +15,6 @@ def before_scenario(context, scenario):
          # Ajouter le WebDriverWait réutilisable
         context.wait = WebDriverWait(context.browser, 10)
 
-        
-
-
 def after_scenario(context, scenario):
     if hasattr(context, "browser"):
         if scenario.status == "failed":
