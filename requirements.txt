@@ -8,6 +8,7 @@ certifi==2026.1.4
 cffi==2.0.0
 charset-normalizer==3.4.4
 colorama==0.4.6
+colorlog==6.10.1
 cucumber-expressions==19.0.0
 cucumber-tag-expressions==9.0.0
 h11==0.16.0

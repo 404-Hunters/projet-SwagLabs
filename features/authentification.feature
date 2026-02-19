@@ -1,6 +1,5 @@
 # couvre tes points 1, 2, 3 et 10 (Connexion standard, Locked_out_user, Champs vides, Logout).
 
-
 Feature: Authentification
   En tant qu'utilisateur
   Je veux me connecter au site avec différents résultats
@@ -33,18 +32,18 @@ Feature: Authentification
     And je reste sur la page Login
 
   
-  # @tc-auth-07 @web @high @negative
-  # Scenario: TC-AUTH-07 - Connexion avec champs vides
-  #   Given je suis sur la page Login
-  #   When je laisse le champ "Username" vide
-  #   And je laisse le champ "Password" vide
-  #   And je clique sur le bouton Login
-  #   Then le message d'erreur "Epic sadface: Username is required" est affiché
-  #   And je reste sur la page Login
+  @tc-auth-07 @web @high @negative
+  Scenario: TC-AUTH-07 - Connexion avec champs vides
+    Given je suis sur la page Login
+    When je laisse le champ "Username" vide
+    And je laisse le champ "Password" vide
+    And je clique sur le bouton Login
+    Then le message d'erreur "Epic sadface: Username is required" est affiché
+    And je reste sur la page Login
 
-  # @tc-auth-10 @web @high @logout
-  # Scenario: TC-AUTH-10 - Déconnexion réussie (Logout)
-  #   Given je suis connecté en tant que "standard_user"
-  #   When je clique sur le menu "Burger"
-  #   And je clique sur le lien "Logout"
-  #   Then je suis redirigé vers la page Login
+  @tc-auth-10 @web @high @logout
+  Scenario: TC-AUTH-10 - Déconnexion réussie (Logout)
+    Given je suis connecté en tant que "standard_user"
+    When je clique sur le menu "Burger"
+    And je clique sur le lien "Logout"
+    Then je suis redirigé vers la page Login

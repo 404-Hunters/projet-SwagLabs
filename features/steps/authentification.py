@@ -1,4 +1,5 @@
 from behave import given, when, then
+import logging
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
@@ -11,6 +12,8 @@ def step_open_login_page(context):
 
 @when('je saisis "{text}" dans le champ "{field_name}"')
 def step_enter_text_in_field(context, text, field_name):
+    logging.info(f"Tentative de saisie de '{text}' dans {field_name}")
+
     if field_name == "Username":
         field = find_element(context.browser, (By.ID, "user-name"))
     elif field_name == "Password":
@@ -22,6 +25,33 @@ def step_enter_text_in_field(context, text, field_name):
     
     field.clear()
     field.send_keys(text)
+
+    actual_value = field.get_attribute("value")
+    assert actual_value == text, \
+        f"Valeur attendue '{text}', trouvée '{actual_value}'"
+    
+    logging.info(f"✅ '{text}' correctement saisi dans {field_name}")
+
+# Pour les champs vides
+@when('je laisse le champ "{field_name}" vide')
+def step_leave_field_empty(context, field_name):
+    logging.info(f"Tentative de laisser le champ {field_name} vide")
+
+    if field_name == "Username":
+        field = find_element(context.browser, (By.ID, "user-name"))
+    elif field_name == "Password":
+        field = find_element(context.browser, (By.ID, "password"))
+    else:
+        raise ValueError(f"Champ inconnu : {field_name}")
+    
+    assert field is not None, f"Champ {field_name} non trouvé"
+    
+    field.clear()
+
+    actual_value = field.get_attribute("value")
+    assert actual_value == "", f"Le champ {field_name} n'est pas vide"
+
+    logging.info(f"✅ Le champ {field_name} est bien vide")
 
 @when('je clique sur le bouton "{button_name}"')
 def step_click_button(context, button_name):
@@ -55,3 +85,42 @@ def step_verify_locked_out_error(context, expected_error):
     error_message = wait_for_element(context.browser, (By.CLASS_NAME, "error-message-container"))
     assert error_message is not None, "Message d'erreur non trouvé"
     assert expected_error in error_message.text
+
+# ================================================ #
+# FEATURE : Authentification - Déconnexion (Logout)
+# ================================================ #
+
+# Connecté en tant que "standard_user"
+@given('je suis connecté en tant que "{username}"')
+def step_login_as_user(context, username):
+    context.browser.get("https://www.saucedemo.com/")
+    step_enter_text_in_field(context, username, "Username")
+    step_enter_text_in_field(context, "secret_sauce", "Password")
+    step_click_button(context, "Login")
+    step_verify_url(context, "inventory.html")
+
+@when('je clique sur le menu "{menu_name}"')
+def step_click_menu(context, menu_name):
+    if menu_name == "Burger":
+        menu_button = wait_for_element(context.browser, (By.ID, "react-burger-menu-btn"))
+        assert menu_button is not None, f"Menu {menu_name} non trouvé"
+        menu_button.click()
+    else:
+        raise ValueError(f"Menu inconnu : {menu_name}")
+
+@when('je clique sur le lien "{link_name}"')
+def step_click_link(context, link_name):
+    if link_name == "Logout":
+        logout_link = wait_for_element(context.browser, (By.ID, "logout_sidebar_link"))
+        assert logout_link is not None, f"Lien {link_name} non trouvé"
+        logout_link.click()
+    else:
+        raise ValueError(f"Lien inconnu : {link_name}")
+    
+
+@then('je suis redirigé vers la page Login')
+def step_verify_redirect_to_login(context):
+    step_verify_url(context, "saucedemo.com")
+
+
+
