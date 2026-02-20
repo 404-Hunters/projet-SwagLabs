@@ -238,16 +238,6 @@ def fill_field(browser, locator, value):
     if field:
         field.send_keys(value)
 
-def click_element(browser, locator):
-    """
-    Clique sur un élément spécifié par le locator
-    Args:
-        browser: Instance du WebDriver
-        locator: Tuple (By.METHOD, "selector")
-    """
-    element = find_element(browser, locator)
-    if element:
-        element.click()
 
 def login(browser, username, password):
     """
