@@ -2,6 +2,9 @@
 
 Feature: Navigation et Détails Produits
 
+  Background: Connexion préalable
+    Given je suis connecté avec "standard_user" et "secret_sauce"
+
   @tc-cat-35 @web @critical @navigation
   Scenario: TC-CAT-35 - Accès détail produit via le nom
     Given je suis connecté sur la page "/inventory.html"

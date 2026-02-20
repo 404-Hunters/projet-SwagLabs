@@ -2,6 +2,9 @@
 
 Feature: Authentification sur SauceDemo
 
+  Background: Connexion préalable
+    Given je suis connecté avec "standard_user" et "secret_sauce"
+
   @tc-auth-01 @web @critical @smoke
   Scenario: TC-AUTH-01 - Connexion réussie avec standard_user
     Given je suis sur la page "Login"
