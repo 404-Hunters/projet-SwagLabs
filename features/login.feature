@@ -1,4 +1,4 @@
-# couvre tes points 1, 2, 10 et 3 (Connexion standard, Locked_out_user, Champs vides login, Logout).
+# couvre les points 1, 2, 10 et 3 (Connexion standard, Locked_out_user, Champs vides login, Logout).
 
 Feature: Authentification sur SauceDemo
 

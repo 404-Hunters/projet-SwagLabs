@@ -1,4 +1,4 @@
-#couvre ton point 8 (Consultation détail produit) et la vérification des éléments.
+#couvre le point 8 (Consultation détail produit) et la vérification des éléments.
 
 Feature: Navigation et Détails Produits
 
