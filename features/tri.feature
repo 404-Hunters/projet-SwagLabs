@@ -1,13 +1,15 @@
-# couvre ton point 7 (Tri A-Z, Z-A, Prix).
+# couvre le point 7 (Tri A-Z, Z-A, Prix).
 
 Feature: Tri du Catalogue Produits
-
+  
   @tc-cat-36 @web @medium @sort
-  Scenario: TC-CAT-36 - Tri par nom (A à Z)
+  Scenario: TC-CAT-36 - Tri par nom (A à Z) depuis un ordre différent
     Given je suis connecté sur la page "/inventory.html"
+    And les produits sont triés par "Name (Z to A)"
     When je sélectionne l'option de tri "Name (A to Z)"
     Then le premier produit affiché est "Sauce Labs Backpack"
     And le dernier produit affiché est "Test.allTheThings() T-Shirt (Red)"
+
 
   @tc-cat-37 @web @medium @sort
   Scenario: TC-CAT-37 - Tri par nom (Z à A)
