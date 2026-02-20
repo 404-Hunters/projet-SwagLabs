@@ -8,7 +8,7 @@ Feature: Tri du Catalogue Produits
   @tc-cat-36 @web @medium @sort
   Scenario: TC-CAT-36 - Tri par nom (A à Z) depuis un ordre différent
     Given je suis connecté sur la page "/inventory.html"
-    And les produits sont triés par "Name (Z to A)"
+    And le texte du sélecteur de tri affiche "Name (Z to A)"
     When je sélectionne l'option de tri "Name (A to Z)"
     Then le premier produit affiché est "Sauce Labs Backpack"
     And le troisième produit affiché est "Sauce Labs Bolt T-Shirt"
