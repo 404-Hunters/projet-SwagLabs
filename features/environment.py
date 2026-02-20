@@ -31,7 +31,7 @@ def before_scenario(context, scenario):
         context.browser.implicitly_wait(10)
         context.browser.maximize_window()
 
-         # Ajouter le WebDriverWait réutilisable
+        # Ajouter le WebDriverWait réutilisable
         context.wait = WebDriverWait(context.browser, 10)
 
 def after_scenario(context, scenario):

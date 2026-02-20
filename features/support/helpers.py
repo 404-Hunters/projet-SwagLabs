@@ -224,3 +224,40 @@ def wait_for_url_contains(driver, expected_url_part, timeout=10):
     except TimeoutException:
         print(f"L'URL ne contient pas '{expected_url_part}' après {timeout} secondes. URL actuelle : {driver.current_url}")
         return False
+    
+
+def fill_field(browser, locator, value):
+    """
+    Remplit un champ de formulaire avec une valeur donnée
+    Args:
+        browser: Instance du WebDriver
+        locator: Tuple (By.METHOD, "selector")
+        value: Valeur à entrer dans le champ
+    """
+    field = find_element(browser, locator)
+    if field:
+        field.send_keys(value)
+
+def click_element(browser, locator):
+    """
+    Clique sur un élément spécifié par le locator
+    Args:
+        browser: Instance du WebDriver
+        locator: Tuple (By.METHOD, "selector")
+    """
+    element = find_element(browser, locator)
+    if element:
+        element.click()
+
+def login(browser, username, password):
+    """
+    Effectue une connexion à l'application avec les identifiants fournis
+    Args:
+        browser: Instance du WebDriver
+        username: Nom d'utilisateur pour la connexion
+        password: Mot de passe pour la connexion
+    """
+    browser.get("https://www.saucedemo.com")
+    fill_field(browser, ("id", "user-name"), username)
+    fill_field(browser, ("id", "password"), password)
+    click_element(browser, ("id", "login-button"))
