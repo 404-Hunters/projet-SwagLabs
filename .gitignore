@@ -179,3 +179,7 @@ pyrightconfig.json
 # End of https://www.toptal.com/developers/gitignore/api/python
 
 behave.ini
+run_tests.sh
+
+allure-results/
+allure*

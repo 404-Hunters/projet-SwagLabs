@@ -4,11 +4,6 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from support.helpers import find_element, wait_for_element, wait_for_elements, click_element, send_keys_to_element, wait_for_url_contains, login, wait_for_element_clickable
 
-# Précondition : Connexion préalable
-@given('je suis connecté avec "{username}" et "{password}"')
-def step_given_logged_in(context, username, password):
-    login(context.browser, username, password)
-
 # Scenario: TC-CAT-36 - Tri par nom (A à Z) depuis un ordre différent
 @given('je suis connecté sur la page "{page_link}"')
 def step_given_page_loaded(context, page_link):
