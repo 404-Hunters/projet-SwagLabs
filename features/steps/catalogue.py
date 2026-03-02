@@ -15,13 +15,11 @@ def step_given_connected_on_page(context, page_name):
   
 @when('je clique sur le nom du produit "{product_name}"')
 def step_when_click_on_product_name(context, product_name):
-    product_link = find_element(context.browser, (By.ID, "item_4_title_link"))
+    product_link = find_element(context.browser, (By.XPATH, f"//div[text()='{product_name}']"))
     assert product_link is not None, f"Le lien du produit '{product_name}' n'est pas cliquable ou introuvable"
-
-    print(f"Élément trouvé : {product_link.tag_name}")
-
     # Clic via JS pour déclencher l'event listener
-    context.browser.execute_script("arguments[0].click();", product_link)
+    # context.browser.execute_script("arguments[0].click();", product_link)
+    product_link.click()
 
 @then('je suis redirigé vers la fiche produit "{link_product}"')
 def step_then_redirected_to_product_page(context, link_product):
@@ -58,10 +56,6 @@ def step_then_product_description_displayed(context):
 # scenario: TC-CAT-34 - Accès détail produit via l'image
 @when('je clique sur l\'image du produit "{product_name}"')
 def step_when_click_on_product_image(context, product_name):
-    product_image = find_element(context.browser, (By.ID, "item_4_img_link"))
+    product_image = find_element(context.browser, (By.XPATH, f"//div[text()='{product_name}']/ancestor::div[@class='inventory_item']//img"))
     assert product_image is not None, f"L'image du produit '{product_name}' n'est pas cliquable ou introuvable"
-
-    print(f"Élément trouvé : {product_image.tag_name}")
-
-    # Clic via JS pour déclencher l'event listener
-    context.browser.execute_script("arguments[0].click();", product_image)
+    product_image.click()
