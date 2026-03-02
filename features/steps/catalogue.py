@@ -9,7 +9,7 @@ from support.locators import ProductPageLocators
   
 @when('je clique sur le nom du produit "{product_name}"')
 def step_when_click_on_product_name(context, product_name):
-    product_link = find_element(context.browser, (By.XPATH, f"//div[text()='{product_name}']"))
+    product_link = find_element(context.browser, (By.XPATH, f"//div[text()='{product_name}']/ancestor::a"))
     assert product_link is not None, f"Le lien du produit '{product_name}' n'est pas cliquable ou introuvable"
     # Clic via JS pour déclencher l'event listener
     # context.browser.execute_script("arguments[0].click();", product_link)
@@ -51,5 +51,6 @@ def step_then_product_description_displayed(context):
 @when('je clique sur l\'image du produit "{product_name}"')
 def step_when_click_on_product_image(context, product_name):
     product_image = find_element(context.browser, (By.XPATH, f"//div[text()='{product_name}']/ancestor::div[@class='inventory_item']//img"))
-    assert product_image is not None, f"L'image du produit '{product_name}' n'est pas cliquable ou introuvable"
-    product_image.click()
+    assert product_image is not None, f"L'image du produit '{product_name}' est introuvable"
+    product_image_link = product_image.find_element(By.XPATH, "./ancestor::a")
+    product_image_link.click()
