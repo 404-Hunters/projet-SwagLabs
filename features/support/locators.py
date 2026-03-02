@@ -28,6 +28,15 @@ class InventoryPageLocators:
     OPTION_ELEMENT = (By.XPATH, "//option[text()='{}']")
     BURGER_MENU_BUTTON = (By.ID, "react-burger-menu-btn")
     LOGOUT_LINK = (By.ID, "logout_sidebar_link")
+
+class ProductPageLocators:
+    """Locators pour la page de détail produit"""
+    PRODUCT_NAME = (By.CLASS_NAME, "inventory_details_name")
+    PRODUCT_PRICE = (By.CLASS_NAME, "inventory_details_price")
+    PRODUCT_IMAGE = (By.CLASS_NAME, "inventory_details_img")
+    PRODUCT_DESCRIPTION = (By.CLASS_NAME, "inventory_details_desc")
+    ADD_TO_CART_BUTTON = (By.CSS_SELECTOR, "button[class*='btn_inventory']")
+    BACK_TO_PRODUCTS_BUTTON = (By.ID, "back-to-products")
     
 class CartPageLocators:
     """Locators pour la page panier"""
