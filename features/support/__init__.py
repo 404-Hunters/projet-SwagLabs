@@ -13,13 +13,12 @@ from .helpers import (
     wait_for_element_visible,
     is_element_present,
     get_element_text,
-    click_element,
     send_keys_to_element,
     find_element,
     find_elements,
     fill_field,
     login,
-    click_element
+    click_element,
 )
 
 __all__ = [

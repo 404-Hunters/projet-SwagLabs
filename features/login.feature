@@ -1,6 +1,9 @@
-# couvre tes points 1, 2, 10 et 3 (Connexion standard, Locked_out_user, Champs vides login, Logout).
+# couvre les points 1, 2, 10 et 3 (Connexion standard, Locked_out_user, Champs vides login, Logout).
 
 Feature: Authentification sur SauceDemo
+
+  Background: Connexion préalable
+    Given je suis connecté avec "standard_user" et "secret_sauce"
 
   @tc-auth-01 @web @critical @smoke
   Scenario: TC-AUTH-01 - Connexion réussie avec standard_user
