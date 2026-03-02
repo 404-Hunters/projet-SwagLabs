@@ -8,7 +8,7 @@ Feature: Tri du Catalogue Produits
   @tc-cat-36 @web @medium @sort
   Scenario: TC-CAT-36 - Tri par nom (A à Z) depuis un ordre différent
     Given je suis connecté sur la page "/inventory.html"
-    And le texte du sélecteur de tri affiche "Name (Z to A)"
+    And je sélectionne l'option de tri "Name (Z to A)"
     When je sélectionne l'option de tri "Name (A to Z)"
     Then le premier produit affiché est "Sauce Labs Backpack"
     And le troisième produit affiché est "Sauce Labs Bolt T-Shirt"
@@ -17,6 +17,7 @@ Feature: Tri du Catalogue Produits
   @tc-cat-37 @web @medium @sort
   Scenario: TC-CAT-37 - Tri par nom (Z à A)
     Given je suis connecté sur la page "/inventory.html"
+    And le texte du sélecteur de tri affiche "Name (A to Z)"
     When je sélectionne l'option de tri "Name (Z to A)"
     Then le premier produit affiché est "Test.allTheThings() T-Shirt (Red)"
     And le troisième produit affiché est "Sauce Labs Fleece Jacket"
