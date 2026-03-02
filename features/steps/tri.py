@@ -3,15 +3,6 @@ from selenium.webdriver.support.ui import Select
 from support.helpers import find_element, wait_for_elements, wait_for_url_contains
 from support.locators import InventoryPageLocators
 
-@given('je suis connecté sur la page "{page_link}"')
-def step_given_page_loaded(context, page_link):
-    if page_link == "/inventory.html":
-        context.browser.get("https://www.saucedemo.com/inventory.html")
-        wait_for_url_contains(context.browser, "inventory.html")
-    else:
-        raise ValueError(f"Page inconnue : {page_link}")
-
-
 @given('le texte du sélecteur de tri affiche "{sort_option}"')
 def step_given_sort_option_displayed(context, sort_option):
     sort_selector = find_element(context.browser, InventoryPageLocators.SORT_SELECTOR)
