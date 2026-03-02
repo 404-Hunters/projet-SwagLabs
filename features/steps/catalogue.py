@@ -6,13 +6,6 @@ from support.helpers import find_element, wait_for_element, wait_for_elements, c
 from support.locators import ProductPageLocators
 
 # Scenario: TC-CAT-35 - Accès détail produit via le nom
-@given('je suis sur la page "{page_name}"')
-def step_given_connected_on_page(context, page_name):
-    if page_name == "/inventory.html":
-        context.browser.get("https://www.saucedemo.com/inventory.html")
-        wait_for_url_contains(context.browser, "inventory.html")
-    else:
-        raise ValueError(f"Page inconnue : {page_name}")
   
 @when('je clique sur le nom du produit "{product_name}"')
 def step_when_click_on_product_name(context, product_name):
