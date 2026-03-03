@@ -18,12 +18,10 @@ Feature: Tunnel de Commande - Coordonnées
   # ============================================================
 
   # TC-CHECK-06
-  @TC-CHECK-06 @web @medium @checkout @validation
-  Scenario: Soumission avec tous les champs vides
-    Given l'utilisateur est sur la page "https://www.saucedemo.com/checkout-step-one.html"
-    When l'utilisateur laisse tous les champs vides
-    And l'utilisateur clique sur le bouton "Continue"
-    Then un message d'erreur "Error: First Name is required" est affiché
-    And un message d'erreur "Error: Last Name is required" est affiché
-    And un message d'erreur "Error: Postal Code is required" est affiché
-    And l'utilisateur reste sur la page "Checkout: Your Information"
+@TC-CHECK-06 @medium @checkout @validation
+Scenario: Soumission avec tous les champs vides
+  Given l'utilisateur est sur la page "https://www.saucedemo.com/checkout-step-one.html"
+  And tous les champs "First Name", "Last Name" et "Zip/Postal Code" sont vides
+  When l'utilisateur clique sur le bouton "Continue"
+  Then un seul message d'erreur "Error: First Name is required" est affiché
+  And l'utilisateur reste sur la page "Checkout: Your Information"

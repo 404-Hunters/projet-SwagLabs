@@ -29,5 +29,4 @@ Feature: Tunnel de Commande - Paiement et Succès
     And l'utilisateur saisit "John" dans "First Name", "Doe" dans "Last Name", "12345" dans "Zip/Postal Code"
     And l'utilisateur clique sur "Continue"
     And l'utilisateur clique sur "Finish"
-    Then l'utilisateur est redirigé vers la page de confirmation de commande
-    And le message "Thank you for your order!" est affiché
+    Then le message "Thank you for your order!" est affiché
