@@ -20,24 +20,24 @@ def step_when_select_sort_option(context, sort_option):
     select = Select(sort_selector)
     select.select_by_visible_text(sort_option)
 
-@then('le premier produit affiché est "{first_product}"')
-def step_then_first_product_displayed(context, first_product):
-    inventory_items = wait_for_elements(context.browser, InventoryPageLocators.INVENTORY_ITEMS)
-    assert len(inventory_items) > 0, "Aucun produit trouvé après le tri"
-    first_item_name = inventory_items[0].find_element(*InventoryPageLocators.PRODUCT_NAME).text
-    assert first_item_name == first_product, f"Premier produit attendu : '{first_product}', Premier produit actuel : '{first_item_name}'"
+@then('les produits avec leurs noms sont affichés dans cet ordre :')
+def step_then_products_sorted(context):
+    expected_order = [row['nom_produit'] for row in context.table]
+    product_name_elements = wait_for_elements(context.browser, InventoryPageLocators.PRODUCT_NAME)
+    actual_order = [elem.text.strip() for elem in product_name_elements]
 
-@then('le troisième produit affiché est "{third_product}"')
-def step_then_third_product_displayed(context, third_product):
-    inventory_items = wait_for_elements(context.browser, InventoryPageLocators.INVENTORY_ITEMS)
-    assert len(inventory_items) >= 3, "Moins de 3 produits trouvés après le tri"
-    third_item_name = inventory_items[2].find_element(*InventoryPageLocators.PRODUCT_NAME).text
-    assert third_item_name == third_product, f"Troisième produit attendu : '{third_product}', Troisième produit actuel : '{third_item_name}'"
+    assert actual_order == expected_order, f"Ordre attendu : {expected_order}, Ordre actuel : {actual_order}"
 
+@then('les produits avec leurs noms et leurs prix sont affichés dans cet ordre :')
+def step_then_products_sorted_with_prices(context):
+    expected_order = [(row['nom_produit'], row['prix']) for row in context.table]
+    product_elements = wait_for_elements(context.browser, InventoryPageLocators.INVENTORY_ITEMS)
 
-@then('le dernier produit affiché est "{last_product}"')
-def step_then_last_product_displayed(context, last_product):
-    inventory_items = wait_for_elements(context.browser, InventoryPageLocators.INVENTORY_ITEMS)
-    assert len(inventory_items) > 0, "Aucun produit trouvé après le tri"
-    last_item_name = inventory_items[-1].find_element(*InventoryPageLocators.PRODUCT_NAME).text
-    assert last_item_name == last_product, f"Dernier produit attendu : '{last_product}', Dernier produit actuel : '{last_item_name}'"
+    actual_order = []
+    for elem in product_elements:
+        name_elem = elem.find_element(*InventoryPageLocators.PRODUCT_NAME)
+        price_elem = elem.find_element(*InventoryPageLocators.PRODUCT_PRICE)
+        actual_order.append((name_elem.text.strip(), price_elem.text.strip()))
+
+    assert actual_order == expected_order, f"Ordre attendu : {expected_order}, Ordre actuel : {actual_order}"
+

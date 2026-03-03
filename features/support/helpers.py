@@ -45,7 +45,7 @@ def find_elements(driver, locator):
 
 def wait_for_element(driver, locator, timeout=10):
     """
-    Attend qu'un élément soit présent dans le DOM
+    Attend qu'un élément soit visible et le retourne
     
     Args:
         driver: Instance du WebDriver
@@ -57,7 +57,7 @@ def wait_for_element(driver, locator, timeout=10):
     """
     try:
         element = WebDriverWait(driver, timeout).until(
-            EC.presence_of_element_located(locator)
+            EC.visibility_of_element_located(locator)
         )
         return element
     except TimeoutException:
@@ -84,8 +84,6 @@ def wait_for_elements(driver, locator, timeout=10):
     except TimeoutException:
         print(f"Aucun élément visible après {timeout} secondes: {locator}")
         return []
-
-
 
 def wait_for_element_clickable(driver, locator, timeout=10):
     """
