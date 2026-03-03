@@ -33,17 +33,17 @@ Feature: Gestion du Panier - CART
     And le badge rouge du panier est incrémenté et affiche "2"
 
   # TC-CART-03
-@TC-CART-03 @medium @panier
-Scenario: Ajout de tous les produits (6 articles)
-  Given l'utilisateur est connecté en tant que "standard_user"
-  And l'utilisateur est sur la page Inventory "https://www.saucedemo.com/inventory.html"
-  And le panier est vide
-  When l'utilisateur clique sur "Add to cart" pour chacun des 6 produits disponibles
-  Then tous les boutons des produits affichent "Remove"
-  And le badge rouge du panier affiche "6"
-  When l'utilisateur clique sur l'icône du panier
-  Then l'utilisateur est redirigé vers la page Panier "https://www.saucedemo.com/cart.html"
-  And le panier contient exactement 6 produits
+  @TC-CART-03 @web @medium @panier
+  Scenario: Ajout de tous les produits (6 articles)
+    Given l'utilisateur est connecté en tant que "standard_user"
+    And l'utilisateur est sur la page Inventory "https://www.saucedemo.com/inventory.html"
+    And le panier est vide
+    When l'utilisateur clique sur "Add to cart" pour chacun des 6 produits disponibles
+    Then tous les boutons des produits affichent "Remove"
+    And le badge rouge du panier affiche "6"
+    When l'utilisateur clique sur l'icône du panier
+    Then l'utilisateur est redirigé vers la page Panier "https://www.saucedemo.com/cart.html"
+    And le panier contient exactement 6 produits
 
   # TC-CART-06
   @TC-CART-06 @web @high @panier
