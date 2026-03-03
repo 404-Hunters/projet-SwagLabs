@@ -4,6 +4,7 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from support.helpers import find_element, wait_for_element, wait_for_elements, click_element, send_keys_to_element, wait_for_url_contains
+from support.locators import LoginPageLocators, InventoryPageLocators
 
 
 @given('je suis sur la page Login')
@@ -15,9 +16,9 @@ def step_enter_text_in_field(context, text, field_name):
     logging.info(f"Tentative de saisie de '{text}' dans {field_name}")
 
     if field_name == "Username":
-        field = find_element(context.browser, (By.ID, "user-name"))
+        field = find_element(context.browser, LoginPageLocators.USERNAME_INPUT)
     elif field_name == "Password":
-        field = find_element(context.browser, (By.ID, "password"))
+        field = find_element(context.browser, LoginPageLocators.PASSWORD_INPUT)
     else:
         raise ValueError(f"Champ inconnu : {field_name}")
     
@@ -38,9 +39,9 @@ def step_leave_field_empty(context, field_name):
     logging.info(f"Tentative de laisser le champ {field_name} vide")
 
     if field_name == "Username":
-        field = find_element(context.browser, (By.ID, "user-name"))
+        field = find_element(context.browser, LoginPageLocators.USERNAME_INPUT)
     elif field_name == "Password":
-        field = find_element(context.browser, (By.ID, "password"))
+        field = find_element(context.browser, LoginPageLocators.PASSWORD_INPUT)
     else:
         raise ValueError(f"Champ inconnu : {field_name}")
     
@@ -56,7 +57,7 @@ def step_leave_field_empty(context, field_name):
 @when('je clique sur le bouton "{button_name}"')
 def step_click_button(context, button_name):
     if button_name == "Login":
-        button = find_element(context.browser, (By.ID, "login-button"))
+        button = find_element(context.browser, LoginPageLocators.LOGIN_BUTTON)
         assert button is not None, f"Bouton {button_name} non trouvé"
         button.click()
     else:
@@ -71,7 +72,7 @@ def step_verify_url(context, expected_path):
 @then('la liste des produits est affichée')
 def step_verify_products_displayed(context):
 
-    products = wait_for_elements(context.browser, (By.CLASS_NAME, "inventory_item"))
+    products = wait_for_elements(context.browser, InventoryPageLocators.INVENTORY_ITEMS)
     
     assert len(products) > 0, "Aucun produit trouvé sur la page"
 
@@ -82,7 +83,7 @@ def step_verify_stay_on_login_page(context):
 # pour locked_out_user un message d'erreur : 
 @then('le message d\'erreur "{expected_error}" est affiché')
 def step_verify_locked_out_error(context, expected_error):
-    error_message = wait_for_element(context.browser, (By.CLASS_NAME, "error-message-container"))
+    error_message = wait_for_element(context.browser, LoginPageLocators.ERROR_MESSAGE)
     assert error_message is not None, "Message d'erreur non trouvé"
     assert expected_error in error_message.text
 
@@ -102,7 +103,7 @@ def step_login_as_user(context, username):
 @when('je clique sur le menu "{menu_name}"')
 def step_click_menu(context, menu_name):
     if menu_name == "Burger":
-        menu_button = wait_for_element(context.browser, (By.ID, "react-burger-menu-btn"))
+        menu_button = wait_for_element(context.browser, (InventoryPageLocators.BURGER_MENU_BUTTON))
         assert menu_button is not None, f"Menu {menu_name} non trouvé"
         menu_button.click()
     else:
@@ -111,7 +112,7 @@ def step_click_menu(context, menu_name):
 @when('je clique sur le lien "{link_name}"')
 def step_click_link(context, link_name):
     if link_name == "Logout":
-        logout_link = wait_for_element(context.browser, (By.ID, "logout_sidebar_link"))
+        logout_link = wait_for_element(context.browser, (InventoryPageLocators.LOGOUT_LINK))
         assert logout_link is not None, f"Lien {link_name} non trouvé"
         logout_link.click()
     else:

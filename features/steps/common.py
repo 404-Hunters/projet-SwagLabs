@@ -8,3 +8,8 @@ from support.helpers import find_element, wait_for_element, wait_for_elements, c
 @given('je suis connecté avec "{username}" et "{password}"')
 def step_given_logged_in(context, username, password):
     login(context.browser, username, password)
+
+@given('je suis sur la page "{page_link}"')
+def step_given_page_loaded(context, page_link):
+    context.browser.get(f"https://www.saucedemo.com{page_link}")
+    wait_for_url_contains(context.browser, page_link)

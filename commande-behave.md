@@ -407,3 +407,15 @@ behave --format=allure_behave.formatter:AllureFormatter -o allure-results/
 ```bash
 allure serve allure-results/
 ```
+
+### Générer un rapport ALlure dynamique
+
+```bash
+allure generate allure-results/ -o allure-report/ --clean
+```
+
+Ouvrir le rapport dans un navigateur
+
+```bash
+allure open allure-report/
+```
