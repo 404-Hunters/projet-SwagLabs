@@ -57,6 +57,9 @@ def before_scenario(context, scenario):
         context.browser = webdriver.Chrome(service=service, options=options)
         context.browser.implicitly_wait(10)
         context.browser.maximize_window()
+
+        context.browser.implicitly_wait(2) # Attend jusqu'à 2s pour CHAQUE find_element
+
         step_logger.info("Navigateur Chrome initialisé avec succès")
 
         # Ajouter le WebDriverWait réutilisable

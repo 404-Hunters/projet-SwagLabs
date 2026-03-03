@@ -7,9 +7,9 @@
 
 Feature: Gestion du Panier - CART
 
-  Background:
-    Given l'utilisateur est connecté en tant que "standard_user"
-    And l'utilisateur est sur la page Inventory "https://www.saucedemo.com/inventory.html"
+  Background: Connexion préalable
+    Given je suis connecté avec "standard_user" et "secret_sauce"
+    And je suis sur la page "/inventory.html"
 
 
   # ============================================================
@@ -25,12 +25,17 @@ Feature: Gestion du Panier - CART
 
   # TC-CART-02
   @TC-CART-02 @web @high @panier
-  Scenario: Ajout d'un produit depuis la fiche détail
-    Given l'utilisateur a déjà 1 produit dans le panier
-    When l'utilisateur clique sur un produit pour accéder à sa fiche détail
-    And l'utilisateur clique sur le bouton "Add to cart" depuis la fiche détail
-    Then le bouton de la fiche détail affiche "Remove"
-    And le badge rouge du panier est incrémenté et affiche "2"
+  Scenario Outline: Ajout d'un produit depuis la fiche détail
+    Given je suis sur la page de détail du produit "<nom_produit>"
+    When l'utilisateur clique sur le bouton "Add to cart" depuis la fiche détail
+    Then le bouton "Add to cart" de la fiche détail affiche "Remove"
+    And le badge rouge du panier affiche "1"
+
+    Examples: Produits
+      | nom_produit           |
+      | Sauce Labs Backpack   |
+      | Sauce Labs Bike Light |
+      | Sauce Labs Onesie     |
 
   # TC-CART-03
   @TC-CART-03 @web @medium @panier
