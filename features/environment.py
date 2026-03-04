@@ -1,9 +1,7 @@
 import os
+import allure
 from selenium import webdriver
-from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.support.ui import WebDriverWait
-from webdriver_manager.chrome import ChromeDriverManager
-
 
 import logging
 import colorlog
@@ -29,23 +27,28 @@ logger.setLevel(logging.INFO)
 step_logger = logging.getLogger('steps')
 
 def before_all(context):
-    # Configuration globale du contexte si nécessaire
     print("Début des tests")
-    context.driver_path = ChromeDriverManager().install()
     context.base_url = "https://www.saucedemo.com"
-  
+
+    # ✅ Détection automatique du mode Headless via la variable d'env du YAML
+    context.headless = os.getenv("HEADLESS", "false").lower() == "true"
+
 def before_scenario(context, scenario):
     step_logger.info(f"Début du scénario: {scenario.name}")
     if "web" in scenario.effective_tags:
         step_logger.info("Initialisation du navigateur Chrome")
-        service = Service(context.driver_path)
 
-        # ✅ Ajouter des options essentielles
         options = webdriver.ChromeOptions()
+
+        # ✅ Mode Headless dynamique pour la CI
+        if context.headless:
+            step_logger.info("Mode HEADLESS activé (CI)")
+            options.add_argument("--headless=new")
+            options.add_argument("--window-size=1920,1080")
+
         options.add_argument("--no-sandbox")
         options.add_argument("--disable-dev-shm-usage")
         options.add_argument("--disable-extensions")
-        # options.add_argument("--headless")  # pour CI/CD
 
         # Désactive le gestionnaire de mots de passe
         prefs = {
@@ -55,8 +58,11 @@ def before_scenario(context, scenario):
         }
         options.add_experimental_option("prefs", prefs)
 
-        context.browser = webdriver.Chrome(service=service, options=options)
-        context.browser.maximize_window()
+        # ✅ Selenium 4 gère ChromeDriver automatiquement — plus besoin de ChromeDriverManager
+        context.browser = webdriver.Chrome(options=options)
+
+        if not context.headless:
+            context.browser.maximize_window()
         step_logger.info("Navigateur Chrome initialisé avec succès")
 
         # Ajouter le WebDriverWait réutilisable
@@ -77,6 +83,15 @@ def after_scenario(context, scenario):
     if hasattr(context, "browser"):
         if scenario.status == "failed":
             step_logger.error(f"Scénario échoué: {scenario.name}")
+
+            # ✅ Screenshot attaché directement au rapport Allure
+            allure.attach(
+                context.browser.get_screenshot_as_png(),
+                name="screenshot",
+                attachment_type=allure.attachment_type.PNG
+            )
+
+            # Sauvegarde également en fichier local (uploadé par la CI)
             os.makedirs("screenshots", exist_ok=True)
             name = scenario.name.replace(" ", "_")
             screenshot_path = f"screenshots/{name}.png"
@@ -84,10 +99,9 @@ def after_scenario(context, scenario):
             step_logger.info(f"Screenshot sauvegardé: {screenshot_path}")
         else:
             step_logger.info(f"Scénario réussi: {scenario.name}")
-        
+
         step_logger.info("Fermeture du navigateur")
         context.browser.quit()
 
 def after_all(context):
-    # Nettoyage global si nécessaire
     print("Fin des tests")
