@@ -32,6 +32,7 @@ def before_all(context):
     # Configuration globale du contexte si nécessaire
     print("Début des tests")
     context.driver_path = ChromeDriverManager().install()
+    context.base_url = "https://www.saucedemo.com"
   
 def before_scenario(context, scenario):
     step_logger.info(f"Début du scénario: {scenario.name}")
@@ -55,11 +56,7 @@ def before_scenario(context, scenario):
         options.add_experimental_option("prefs", prefs)
 
         context.browser = webdriver.Chrome(service=service, options=options)
-        context.browser.implicitly_wait(10)
         context.browser.maximize_window()
-
-        context.browser.implicitly_wait(2) # Attend jusqu'à 2s pour CHAQUE find_element
-
         step_logger.info("Navigateur Chrome initialisé avec succès")
 
         # Ajouter le WebDriverWait réutilisable
