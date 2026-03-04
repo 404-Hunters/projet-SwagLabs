@@ -6,7 +6,6 @@ from .locators import (
     InventoryPageLocators,
     CartPageLocators,
     CheckoutPageLocators,
-    ProductDetailPageLocators,
 )
 from .helpers import (
     wait_for_element,
