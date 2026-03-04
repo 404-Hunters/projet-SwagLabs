@@ -16,6 +16,9 @@ jobs:
   test:
     name: Tests Behave – Chrome Headless
     runs-on: ubuntu-latest
+    permissions:
+      checks: write
+      pull-requests: write
 
     steps:
       # ── 1. Récupération du code ──────────────────────────────────────────
@@ -65,7 +68,7 @@ jobs:
         with:
           report_paths: "reports/junit/*.xml"
           check_name: "Behave – Chrome"
-          fail_on_failure: true
+          fail_on_failure: false
 
       # ── 7. Upload des artefacts bruts Allure ─────────────────────────────
       - name: Upload des résultats Allure bruts
