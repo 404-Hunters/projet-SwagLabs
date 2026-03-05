@@ -11,7 +11,7 @@ from support.locators import LoginPageLocators, InventoryPageLocators
 def step_open_login_page(context):
     context.browser.get("https://www.saucedemo.com/")
 
-@when('l\'utilisateur saisis "{text}" dans le champ "{field_name}"')
+@when('l\'utilisateur saisit "{text}" dans le champ "{field_name}"')
 def step_enter_text_in_field(context, text, field_name):
     logging.info(f"Tentative de saisie de '{text}' dans {field_name}")
 
