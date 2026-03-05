@@ -1,19 +1,15 @@
 # ============================================================
-# Feature: Tunnel de Commande - Coordonnées
+# Feature: Commande & Tunnel de Commande
 # Application: SauceDemo (https://www.saucedemo.com)
 # Exécuté par: Hamza
 # Date: 20/02/2026
 # ============================================================
 
-Feature: Tunnel de Commande - Coordonnées
+Feature: Commande & Tunnel de Commande
 
   Background:
     Given l'utilisateur est connecté en tant que "standard_user"
     And l'article "Sauce Labs Backpack" est présent dans le panier
-
-  # ============================================================
-  # STORY-04 : Tunnel de Commande - Coordonnées
-  # ============================================================
 
   # TC-CHECK-06
   @TC-CHECK-06 @web @medium @checkout @validation
@@ -22,11 +18,6 @@ Feature: Tunnel de Commande - Coordonnées
     When l'utilisateur clique sur le bouton "Continue" de la page Checkout "checkout-step-one"
     Then un seul message d'erreur "Error: First Name is required" est affiché
     And l'utilisateur reste sur la page "/checkout-step-one.html"
-
-
-  # ============================================================
-  # STORY-05 : Tunnel de Commande - Paiement & Succès
-  # ============================================================
 
   # TC-CHECK-08
   @TC-CHECK-08 @web @high @checkout @parcours-complet @smoke
