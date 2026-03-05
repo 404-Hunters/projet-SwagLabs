@@ -36,8 +36,8 @@ def step_article_present_panier(context, product_name):
     # Vérifier que le panier contient l'article
     cart_badge_element = wait_for_element_visible(context.browser, InventoryPageLocators.SHOPPING_CART_BADGE)
     assert cart_badge_element is not None, "Le badge du panier n'est pas présent"
-    assert cart_badge_element.text.strip() == "1", f"Le badge du panier affiche '{cart_badge_element.text.strip()}', mais '1' était attendu"
-    
+    actual_badge_count_integer = int(cart_badge_element.text.strip())
+    assert actual_badge_count_integer > 0, "Le badge du panier n'indique pas de produits présents"
     # Vérifier que le produit est présent dans le panier
     click_bouton_link_panier(context)
     

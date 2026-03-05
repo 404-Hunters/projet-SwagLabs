@@ -43,8 +43,8 @@ def step_remplir_formulaire_checkout(context):
         input_locator = champ_selector[champ]
         entered_value = send_keys_to_element(context.browser, input_locator, valeur.strip())
 
-        assert entered_value == valeur, (
-            f"Champ '{champ}' — attendu : '{valeur}', obtenu : '{entered_value}'"
+        assert entered_value == valeur.strip(), (
+            f"Champ '{champ}' — attendu : '{valeur.strip()}', obtenu : '{entered_value}'"
         )
 
 @then('le message de confirmation "{expected_message}" est affiché')

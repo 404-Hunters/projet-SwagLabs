@@ -197,7 +197,7 @@ def send_keys_to_element(driver, locator, text, timeout=10):
     Returns:
         valeur texte entrée dans le champ ou None
     """
-    element = wait_for_element(driver, locator, timeout)
+    element = wait_for_element_visible(driver, locator, timeout)
     if element:
         element.clear()
         element.send_keys(text)
@@ -263,7 +263,7 @@ def localiser_produit_par_nom(context, product_name):
          WebElement du produit trouvé ou None
     """
     xpath = f"//div[text()='{product_name}' and @data-test='inventory-item-name']//ancestor::div[@data-test='inventory-item']"
-    product_element = wait_for_element(context.browser, (By.XPATH, xpath))
+    product_element = wait_for_element_visible(context.browser, (By.XPATH, xpath))
     assert product_element is not None, f"Produit '{product_name}' non trouvé sur la page Inventory"
     return product_element
 
