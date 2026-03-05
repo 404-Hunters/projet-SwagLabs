@@ -1,36 +1,11 @@
 from behave import given, when, then, step
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import Select
-from support.helpers import find_element, find_elements, wait_for_element, wait_for_elements, wait_for_url_contains
+from support.helpers import find_element, find_elements, wait_for_element, wait_for_element_visible, wait_for_element_clickable, wait_for_elements, wait_for_url_contains, localiser_produit_par_nom, localiser_cta_produit, click_bouton_link_panier
 from support.locators import InventoryPageLocators, ProductPageLocators, CartPageLocators, CheckoutPageLocators
 
 
-def localiser_produit_par_nom(context, product_name):
-    # Localiser le produit par son nom
-    xpath = f"//div[text()='{product_name}' and @data-test='inventory-item-name']//ancestor::div[@data-test='inventory-item']"
-    product_element = find_element(context.browser, (By.XPATH, xpath))
-    assert product_element is not None, f"Produit '{product_name}' non trouvé sur la page Inventory"
-    return product_element
-
-def localiser_cta_produit(context, product_name):
-    product_element = localiser_produit_par_nom(context, product_name)
-    # Localiser le bouton à l'intérieur du produit
-    xpath_button = ".//button[contains(@data-test, 'add-to-cart') or contains(@data-test, 'remove')]"
-    button = product_element.find_element(By.XPATH, xpath_button)
-    assert button is not None, f"Le bouton n'a pas été trouvé"
-    return button
-
-def click_bouton_link_panier(context):
-    cart_link = find_element(context.browser, InventoryPageLocators.SHOPPING_CART_LINK)
-    assert cart_link is not None, "Le lien du panier n'a pas été trouvé"
-    cart_link.click()
-
 # Scenario TC-CART-01 : Ajout d'un produit depuis la page Inventory
-@when('l\'utilisateur clique sur le bouton "{button_name}" de l\'article "{product_name}"')
-def step_ajout_panier(context, button_name, product_name):
-    button_cta = localiser_cta_produit(context, product_name)
-    assert button_cta is not None, f"Le bouton '{button_name}' de l'article '{product_name}' n'a pas été trouvé"
-    button_cta.click()
 
 @step('le bouton de l\'article "{product_name}" affiche "{expected_text}"')
 def step_verification_affichage_cta_produit_inventory(context, product_name, expected_text):
@@ -41,7 +16,7 @@ def step_verification_affichage_cta_produit_inventory(context, product_name, exp
 
 @step('le bouton de l\'article "{product_name}" sur la page détail affiche "{expected_text}"')
 def step_verification_affichage_fiche_detail(context, product_name, expected_text):
-    button_element = find_element(context.browser, ProductPageLocators.CTA_BUTTON)
+    button_element = wait_for_element_clickable(context.browser, ProductPageLocators.CTA_BUTTON)
     assert button_element is not None, "Le bouton 'Add to cart' sur la fiche détail n'a pas été trouvé"
     assert button_element.text.strip() == expected_text, f"Le bouton n'affiche pas '{expected_text}', mais '{button_element.text.strip()}'"
 
@@ -49,7 +24,7 @@ def step_verification_affichage_fiche_detail(context, product_name, expected_tex
 @then('le badge rouge du panier affiche "{expected_badge_count:d}"')
 def step_verification_badge_count(context, expected_badge_count):
     xpath = "//a[@class='shopping_cart_link']//span[@class='shopping_cart_badge' and @data-test='shopping-cart-badge']"
-    badge_element = find_element(context.browser, (By.XPATH, xpath))
+    badge_element = wait_for_element_visible(context.browser, (By.XPATH, xpath))
     assert badge_element is not None, "Le badge rouge du panier n'a pas été trouvé"
     actual_badge_count = badge_element.text.strip()
     assert actual_badge_count == str(expected_badge_count), f"Le badge rouge du panier affiche '{actual_badge_count}', attendu '{expected_badge_count}'"
@@ -62,7 +37,7 @@ def step_verification_article_panier(context, product_name):
     assert article_element is not None, f"L'article '{product_name}' n'est pas présent dans le panier"
 
 # Scenario TC-CART-02 : Ajout d'un produit depuis la fiche détail
-@given('je suis sur la page de détail du produit "{product_name}"')
+@given('l\'utilisateur est sur la page de détail du produit "{product_name}"')
 def step_naviguer_page_detail(context, product_name):
     product_element_name = localiser_produit_par_nom(context, product_name).find_element(*InventoryPageLocators.PRODUCT_NAME)
     # Cliquer sur le produit pour accéder à sa fiche détail
@@ -73,7 +48,7 @@ def step_naviguer_page_detail(context, product_name):
 
 @when('l\'utilisateur clique sur le bouton "Add to cart" depuis la fiche détail')
 def step_ajout_panier_fiche_detail(context):
-    button_element = find_element(context.browser, ProductPageLocators.CTA_BUTTON)
+    button_element = wait_for_element(context.browser, ProductPageLocators.CTA_BUTTON)
     assert button_element is not None, "Le bouton 'Add to cart' sur la fiche détail n'a pas été trouvé"
     button_element.click()
 
@@ -99,7 +74,7 @@ def step_ajout_tous_produits(context, product_count):
 @then('tous les boutons des produits affichent "{expected_text}"')
 def step_verification_texte_remove_boutons(context, expected_text):
     # Trouver tous les boutons "Remove" sur la page
-    buttons = find_elements(context.browser, InventoryPageLocators.CTA_BUTTON)
+    buttons = wait_for_elements(context.browser, InventoryPageLocators.CTA_BUTTON)
     for button in buttons:
         assert button is not None, "Un bouton 'Remove' n'a pas été trouvé"
         assert button.text.strip() == expected_text, f"Le bouton n'affiche pas '{expected_text}', mais '{button.text.strip()}'"
@@ -114,42 +89,13 @@ def step_verification_redirection_panier(context, expected_url):
 
 @then('le panier contient exactement {expected_count:d} produits')
 def step_verification_nombre_produits_panier(context, expected_count):
-    cart_items = find_elements(context.browser, CartPageLocators.CART_ITEM)
+    cart_items = wait_for_elements(context.browser, CartPageLocators.CART_ITEM)
     assert cart_items is not None, "Les éléments du panier n'ont pas été trouvés"
     actual_count = len(cart_items)
     assert actual_count == expected_count, f"Le panier contient {actual_count} produits, attendu {expected_count}"
 
 
 #TC-CART-05: Suppression d'un article depuis la page d'accueil
-@given('l\'article "{product_name}" est présent dans le panier')
-def step_article_present_panier(context, product_name):
-
-    # Ajouter l'article au panier si ce n'est pas déjà fait
-    step_ajout_panier(context, "Add to cart", product_name)
-
-    # Vérifier que le panier contient l'article
-    cart_badge_element = find_element(context.browser, InventoryPageLocators.SHOPPING_CART_BADGE)
-    assert cart_badge_element is not None, "Le badge du panier n'est pas présent"
-    assert cart_badge_element.text.strip() == "1", f"Le badge du panier affiche '{cart_badge_element.text.strip()}', mais '1' était attendu"
-    
-    # Vérifier que le produit est présent dans le panier
-    click_bouton_link_panier(context)
-    
-    product_element = localiser_produit_par_nom(context, product_name)
-    assert product_element is not None, f"Le produit '{product_name}' n'est pas présent dans le panier"
-
-    product_name_element = product_element.find_element(*CartPageLocators.CART_ITEM_NAME)
-    assert product_name_element is not None, f"Le nom du produit '{product_name}' n'a pas été trouvé dans le panier"
-    assert product_name_element.text.strip() == product_name, f"Le nom du produit dans le panier est '{product_name_element.text.strip()}', attendu '{product_name}'"
-    
-    # Chercher le bouton retour au catalogue et cliquer dessus
-    continue_shopping_button = find_element(context.browser, CartPageLocators.CONTINUE_SHOPPING)
-    assert continue_shopping_button is not None, "Le bouton 'Continue Shopping' n'a pas été trouvé sur la page du panier"
-    continue_shopping_button.click()
-
-    # Vérifier que l'utilisateur est redirigé vers la page Inventory
-    wait_for_url_contains(context.browser, "/inventory.html")
-
 @then('le badge du panier disparaît')
 def step_verification_badge_disparition(context):
     cart_badge_element = find_element(context.browser, InventoryPageLocators.SHOPPING_CART_BADGE)

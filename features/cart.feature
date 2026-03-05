@@ -8,8 +8,8 @@
 Feature: Gestion du Panier - CART
 
   Background: Connexion préalable
-    Given je suis connecté avec "standard_user" et "secret_sauce"
-    And je suis sur la page "/inventory.html"
+    Given l'utilisateur est connecté avec "standard_user" et "secret_sauce"
+    And l'utilisateur est sur la page "/inventory.html"
 
 
   # ============================================================
@@ -38,7 +38,7 @@ Feature: Gestion du Panier - CART
   # TC-CART-02
   @TC-CART-02 @web @high @panier
   Scenario Outline: Ajout d'un produit depuis la fiche détail
-    Given je suis sur la page de détail du produit "<nom_produit>"
+    Given l'utilisateur est sur la page de détail du produit "<nom_produit>"
     When l'utilisateur clique sur le bouton "Add to cart" depuis la fiche détail
     Then le bouton de l'article "<nom_produit>" sur la page détail affiche "Remove"
     And le badge rouge du panier affiche "1"

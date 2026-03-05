@@ -19,7 +19,13 @@ from .helpers import (
     fill_field,
     login,
     click_element,
+    wait_for_url_contains,
+    localiser_produit_par_nom,
+    localiser_cta_produit,
+    click_bouton_link_panier,
 )
+
+
 
 __all__ = [
     # Locators
