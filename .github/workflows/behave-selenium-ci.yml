@@ -1,0 +1,131 @@
+name: Tests BDD Behave + Selenium
+
+on:
+  push:
+    branches:
+      - quentin-automatisation
+  pull_request:
+    branches:
+      - develop
+  workflow_dispatch: # Déclenchement manuel depuis l'interface GitHub
+
+env:
+  PYTHON_VERSION: "3.14"
+
+jobs:
+  test:
+    name: Tests Behave – Chrome Headless
+    runs-on: ubuntu-latest
+    permissions:
+      checks: write
+      pull-requests: write
+
+    steps:
+      # ── 1. Récupération du code ──────────────────────────────────────────
+      - name: Checkout du dépôt
+        uses: actions/checkout@v4
+
+      # ── 2. Installation de Python 3.14 ───────────────────────────────────
+      - name: Configurer Python ${{ env.PYTHON_VERSION }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: "${{ env.PYTHON_VERSION }}"
+          cache: "pip"
+
+      # ── 3. Installation des dépendances Python ───────────────────────────
+      - name: Installer les dépendances
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      # ── 4. Installation de Chrome ────────────────────────────────────────
+      - name: Installer Google Chrome
+        uses: browser-actions/setup-chrome@v1
+        with:
+          chrome-version: stable
+
+      - name: Vérifier la version de Chrome
+        run: google-chrome --version || chromium-browser --version
+
+      # ── 5. Lancement des tests Behave ────────────────────────────────────
+      - name: Lancer les tests Behave
+        run: |
+          behave \
+            --no-capture \
+            --format allure_behave.formatter:AllureFormatter \
+            --outfile reports/allure-results \
+            --junit \
+            --junit-directory reports/junit \
+            || true  # Garantit la génération des rapports même en cas d'échec
+        env:
+          HEADLESS: "true"
+          DISPLAY: ""
+
+      # ── 6. Publication des résultats JUnit ───────────────────────────────
+      - name: Publier les résultats de tests
+        uses: mikepenz/action-junit-report@v4
+        if: always()
+        with:
+          report_paths: "reports/junit/*.xml"
+          check_name: "Behave – Chrome"
+          fail_on_failure: false
+
+      # ── 7. Upload des artefacts bruts Allure ─────────────────────────────
+      - name: Upload des résultats Allure bruts
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: allure-results
+          path: reports/allure-results/
+          retention-days: 1 # Temporaire, utilisé par le job "report"
+
+      # ── 8. Upload des artefacts divers (screenshots, logs) ───────────────
+      - name: Upload des artefacts de test
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: test-artifacts
+          path: |
+            screenshots/
+            logs/
+          retention-days: 14
+
+  # ── Job séparé : génération du rapport + déploiement GitHub Pages ─────────
+  report:
+    name: Rapport Allure + GitHub Pages
+    runs-on: ubuntu-latest
+    needs: test # Attend la fin du job "test"
+    if: always()
+    permissions:
+      contents: write # ✅ Requis pour pousser sur la branche gh-pages
+
+    steps:
+      - name: Checkout du dépôt
+        uses: actions/checkout@v4
+
+      - name: Télécharger les résultats Allure
+        uses: actions/download-artifact@v4
+        with:
+          name: allure-results
+          path: reports/allure-results
+
+      # Génère le rapport HTML Allure et conserve l'historique des 10 derniers runs
+      - name: Générer le rapport Allure
+        uses: simple-elf/allure-report-action@master
+        if: always()
+        with:
+          allure_results: reports/allure-results
+          allure_history: allure-history
+          keep_reports: 10
+
+      # Publie le rapport HTML sur GitHub Pages
+      # → accessible sur https://<org>.github.io/<repo>/
+      # ⚠️  Activer GitHub Pages dans Settings → Pages
+      #     Source : "Deploy from a branch" → branche "gh-pages"
+      - name: Déployer le rapport sur GitHub Pages
+        uses: peaceiris/actions-gh-pages@v4
+        if: always()
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_branch: gh-pages
+          publish_dir: allure-history

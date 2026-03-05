@@ -4,6 +4,8 @@ Fonctions utilitaires pour les tests Selenium
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import TimeoutException, NoSuchElementException
+from support.locators import InventoryPageLocators, CartPageLocators
+from selenium.webdriver.common.by import By
 
 
 def find_element(driver, locator):
@@ -45,7 +47,7 @@ def find_elements(driver, locator):
 
 def wait_for_element(driver, locator, timeout=10):
     """
-    Attend qu'un élément soit visible et le retourne
+    Attend qu'un élément soit présent dans le DOM et le retourne
     
     Args:
         driver: Instance du WebDriver
@@ -57,7 +59,7 @@ def wait_for_element(driver, locator, timeout=10):
     """
     try:
         element = WebDriverWait(driver, timeout).until(
-            EC.visibility_of_element_located(locator)
+            EC.presence_of_element_located(locator)
         )
         return element
     except TimeoutException:
@@ -193,14 +195,14 @@ def send_keys_to_element(driver, locator, text, timeout=10):
         timeout: Temps d'attente maximum en secondes
         
     Returns:
-        bool: True si l'envoi a réussi, False sinon
+        valeur texte entrée dans le champ ou None
     """
-    element = wait_for_element(driver, locator, timeout)
+    element = wait_for_element_visible(driver, locator, timeout)
     if element:
         element.clear()
         element.send_keys(text)
-        return True
-    return False
+        return element.get_attribute("value")
+    return None
 
 def wait_for_url_contains(driver, expected_url_part, timeout=10):
     """
@@ -232,7 +234,7 @@ def fill_field(browser, locator, value):
         locator: Tuple (By.METHOD, "selector")
         value: Valeur à entrer dans le champ
     """
-    field = find_element(browser, locator)
+    field = wait_for_element_visible(browser, locator)
     if field:
         field.send_keys(value)
 
@@ -249,3 +251,45 @@ def login(browser, username, password):
     fill_field(browser, ("id", "user-name"), username)
     fill_field(browser, ("id", "password"), password)
     click_element(browser, ("id", "login-button"))
+
+
+def localiser_produit_par_nom(context, product_name):
+    """
+     Localise un produit dans le panier par son nom
+     Args:
+         context: Contexte de test Behave
+         product_name: Nom du produit à localiser
+    Returns:
+         WebElement du produit trouvé ou None
+    """
+    xpath = f"//div[text()='{product_name}' and @data-test='inventory-item-name']//ancestor::div[@data-test='inventory-item']"
+    product_element = wait_for_element_visible(context.browser, (By.XPATH, xpath))
+    assert product_element is not None, f"Produit '{product_name}' non trouvé sur la page"
+    return product_element
+
+def localiser_cta_produit(context, product_name):
+    """Localise le bouton d'ajout ou de suppression d'un produit dans le panier par son nom
+    Args:
+        context: Contexte de test Behave
+        product_name: Nom du produit pour lequel localiser le bouton
+    Returns:
+        WebElement du bouton trouvé ou None
+    """
+    product_element = localiser_produit_par_nom(context, product_name)
+    # Localiser le bouton à l'intérieur du produit
+    xpath_button = ".//button[contains(@data-test, 'add-to-cart') or contains(@data-test, 'remove')]"
+    try:
+        button = product_element.find_element(By.XPATH, xpath_button)
+    except NoSuchElementException:
+        print(f"Le bouton d'ajout ou de suppression pour le produit '{product_name}' n'a pas été trouvé")
+        return None
+    return button
+
+def click_bouton_link_panier(context):
+    """Clique sur le lien du panier pour accéder à la page du panier
+    Args:
+        context: Contexte de test Behave
+    """
+    cart_link = wait_for_element_clickable(context.browser, InventoryPageLocators.SHOPPING_CART_LINK)
+    assert cart_link is not None, "Le lien du panier n'a pas été trouvé"
+    cart_link.click()

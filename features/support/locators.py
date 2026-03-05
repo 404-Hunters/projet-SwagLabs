@@ -45,14 +45,15 @@ class CartPageLocators:
     CART_ITEM = (By.CSS_SELECTOR, "div.cart_item[data-test='inventory-item']")
     CART_ITEM_NAME = (By.CLASS_NAME, "inventory_item_name")
     REMOVE_BUTTON = (By.CSS_SELECTOR, "button[data-test='remove']")
-    CHECKOUT_BUTTON = (By.ID, "checkout")
+    CHECKOUT_BUTTON = (By.CSS_SELECTOR, "button[data-test='checkout']")
     CONTINUE_SHOPPING = (By.ID, "continue-shopping")
 class CheckoutPageLocators:
-    """Locators pour les pages de checkout"""
-    FIRST_NAME = (By.ID, "first-name")
-    LAST_NAME = (By.ID, "last-name")
-    POSTAL_CODE = (By.ID, "postal-code")
-    CONTINUE_BUTTON = (By.ID, "continue")
-    FINISH_BUTTON = (By.ID, "finish")
-    COMPLETE_HEADER = (By.CLASS_NAME, "complete-header")
+    """Locators pour les pages de checkout"""   
+    FIRST_NAME_INPUT = (By.CSS_SELECTOR, "input[data-test='firstName']")
+    LAST_NAME_INPUT = (By.CSS_SELECTOR, "input[data-test='lastName']")
+    POSTAL_CODE_INPUT = (By.CSS_SELECTOR, "input[data-test='postalCode']")
+    CONTINUE_BUTTON = (By.CSS_SELECTOR, "input[data-test='continue'][type='submit']")
+    FINISH_BUTTON = (By.CSS_SELECTOR, "button[data-test='finish']")
+    COMPLETE_HEADER = (By.CSS_SELECTOR, "h2.complete-header[data-test='complete-header']")
     CONTINUE_SHOPPING_BUTTON = (By.CSS_SELECTOR, "button[data-test='continue-shopping']")
+    ERROR_MESSAGE = (By.CSS_SELECTOR, "h3[data-test='error']")
