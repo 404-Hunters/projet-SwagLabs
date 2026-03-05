@@ -1,11 +1,11 @@
 from behave import given, when, then, step
 from selenium.webdriver.support.ui import Select
-from support.helpers import find_element, wait_for_elements, wait_for_url_contains
+from support.helpers import find_element, wait_for_elements, wait_for_element_visible, wait_for_element_clickable, wait_for_url_contains
 from support.locators import InventoryPageLocators
 
 @given('le texte du sélecteur de tri affiche "{sort_option}"')
 def step_given_sort_option_displayed(context, sort_option):
-    sort_selector = find_element(context.browser, InventoryPageLocators.SORT_SELECTOR)
+    sort_selector = wait_for_element_clickable(context.browser, InventoryPageLocators.SORT_SELECTOR)
     assert sort_selector is not None, "Le sélecteur de tri n'est pas trouvé"
 
     select = Select(sort_selector)
@@ -13,9 +13,9 @@ def step_given_sort_option_displayed(context, sort_option):
 
     assert actual_option == sort_option, f"Option de tri attendue : '{sort_option}', Option actuelle : '{actual_option}'"
 
-@step('je sélectionne l\'option de tri "{sort_option}"')
+@step('l\'utilisateur sélectionne l\'option de tri "{sort_option}"')
 def step_when_select_sort_option(context, sort_option):
-    sort_selector = find_element(context.browser, InventoryPageLocators.SORT_SELECTOR)
+    sort_selector = wait_for_element_clickable(context.browser, InventoryPageLocators.SORT_SELECTOR)
     assert sort_selector is not None, "Le sélecteur de tri n'est pas trouvé"
     select = Select(sort_selector)
     select.select_by_visible_text(sort_option)

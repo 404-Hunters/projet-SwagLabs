@@ -7,11 +7,11 @@ from support.helpers import find_element, wait_for_element, wait_for_elements, c
 from support.locators import LoginPageLocators, InventoryPageLocators
 
 
-@given('je suis sur la page Login')
+@given('l\'utilisateur est sur la page Login')
 def step_open_login_page(context):
     context.browser.get("https://www.saucedemo.com/")
 
-@when('je saisis "{text}" dans le champ "{field_name}"')
+@when('l\'utilisateur saisis "{text}" dans le champ "{field_name}"')
 def step_enter_text_in_field(context, text, field_name):
     logging.info(f"Tentative de saisie de '{text}' dans {field_name}")
 
@@ -34,7 +34,7 @@ def step_enter_text_in_field(context, text, field_name):
     logging.info(f"✅ '{text}' correctement saisi dans {field_name}")
 
 # Pour les champs vides
-@when('je laisse le champ "{field_name}" vide')
+@when('l\'utilisateur laisse le champ "{field_name}" vide')
 def step_leave_field_empty(context, field_name):
     logging.info(f"Tentative de laisser le champ {field_name} vide")
 
@@ -54,7 +54,7 @@ def step_leave_field_empty(context, field_name):
 
     logging.info(f"✅ Le champ {field_name} est bien vide")
 
-@when('je clique sur le bouton "{button_name}"')
+@when('l\'utilisateur clique sur le bouton "{button_name}"')
 def step_click_button(context, button_name):
     if button_name == "Login":
         button = find_element(context.browser, LoginPageLocators.LOGIN_BUTTON)
@@ -62,8 +62,7 @@ def step_click_button(context, button_name):
         button.click()
     else:
         raise ValueError(f"Bouton inconnu : {button_name}")
-
-@then('je suis redirigé vers la page "{expected_path}"')
+    
 def step_verify_url(context, expected_path):
 
     assert wait_for_url_contains(context.browser, expected_path), \
@@ -76,7 +75,7 @@ def step_verify_products_displayed(context):
     
     assert len(products) > 0, "Aucun produit trouvé sur la page"
 
-@then('je reste sur la page Login')
+@then('l\'utilisateur reste sur la page Login')
 def step_verify_stay_on_login_page(context):
     assert wait_for_url_contains(context.browser, "saucedemo.com"), "L'utilisateur n'est pas resté sur la page Login"
 
@@ -92,7 +91,7 @@ def step_verify_locked_out_error(context, expected_error):
 # ================================================ #
 
 # Connecté en tant que "standard_user"
-@given('je suis connecté en tant que "{username}"')
+@given('l\'utilisateur est connecté en tant que "{username}"')
 def step_login_as_user(context, username):
     context.browser.get("https://www.saucedemo.com/")
     step_enter_text_in_field(context, username, "Username")
@@ -100,7 +99,7 @@ def step_login_as_user(context, username):
     step_click_button(context, "Login")
     step_verify_url(context, "inventory.html")
 
-@when('je clique sur le menu "{menu_name}"')
+@when('l\'utilisateur clique sur le menu "{menu_name}"')
 def step_click_menu(context, menu_name):
     if menu_name == "Burger":
         menu_button = wait_for_element(context.browser, (InventoryPageLocators.BURGER_MENU_BUTTON))
@@ -109,7 +108,7 @@ def step_click_menu(context, menu_name):
     else:
         raise ValueError(f"Menu inconnu : {menu_name}")
 
-@when('je clique sur le lien "{link_name}"')
+@when('l\'utilisateur clique sur le lien "{link_name}"')
 def step_click_link(context, link_name):
     if link_name == "Logout":
         logout_link = wait_for_element(context.browser, (InventoryPageLocators.LOGOUT_LINK))
@@ -119,7 +118,7 @@ def step_click_link(context, link_name):
         raise ValueError(f"Lien inconnu : {link_name}")
     
 
-@then('je suis redirigé vers la page Login')
+@then('l\'utilisateur est redirigé vers la page Login')
 def step_verify_redirect_to_login(context):
     step_verify_url(context, "saucedemo.com")
 

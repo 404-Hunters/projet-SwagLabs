@@ -9,19 +9,37 @@ Feature: Tunnel de Commande - Coordonnées
 
   Background:
     Given l'utilisateur est connecté en tant que "standard_user"
-    And l'utilisateur a au moins 1 produit dans le panier
-    And l'utilisateur est sur la page Panier "https://www.saucedemo.com/cart.html"
-
+    And l'article "Sauce Labs Backpack" est présent dans le panier
+    And l'utilisateur est sur la page "/cart.html"
 
   # ============================================================
   # STORY-04 : Tunnel de Commande - Coordonnées
   # ============================================================
 
   # TC-CHECK-06
-@TC-CHECK-06 @medium @checkout @validation
-Scenario: Soumission avec tous les champs vides
-  Given l'utilisateur est sur la page "https://www.saucedemo.com/checkout-step-one.html"
-  And tous les champs "First Name", "Last Name" et "Zip/Postal Code" sont vides
-  When l'utilisateur clique sur le bouton "Continue"
-  Then un seul message d'erreur "Error: First Name is required" est affiché
-  And l'utilisateur reste sur la page "Checkout: Your Information"
+  @TC-CHECK-06 @web @medium @checkout @validation
+  Scenario: Soumission avec tous les champs vides
+    Given l'utilisateur est sur la page "/checkout-step-one.html"
+    When l'utilisateur clique sur le bouton "Continue" de la page checkout
+    Then un seul message d'erreur "Error: First Name is required" est affiché
+    And l'utilisateur reste sur la page "/checkout-step-one.html"
+
+
+  # ============================================================
+  # STORY-05 : Tunnel de Commande - Paiement & Succès
+  # ============================================================
+
+  # TC-CHECK-08
+  @TC-CHECK-08 @web @high @checkout @parcours-complet @smoke
+  Scenario: Parcours de commande complet
+    Given l'utilisateur est sur la page "/checkout-step-one.html"
+      When l'utilisateur remplit le formulaire de commande:
+      | champ           | valeur |
+      | First Name      | John   |
+      | Last Name       | Doe    |
+      | Zip/Postal Code | 12345  |
+    And l'utilisateur clique sur le bouton "Continue" de la page Checkout "checkout-step-one"
+    Then l'utilisateur est redirigé vers la page "/checkout-step-two.html"
+    When l'utilisateur clique sur le bouton "Finish" de la page Checkout "checkout-step-two"
+    Then l'utilisateur est redirigé vers la page "/checkout-complete.html"
+    Then le message de confirmation "Thank you for your order!" est affiché
