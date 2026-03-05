@@ -9,6 +9,7 @@ Feature: Commande & Tunnel de Commande
 
   Background:
     Given l'utilisateur est connecté en tant que "standard_user"
+    And l'utilisateur est sur la page "/inventory.html"
     And l'article "Sauce Labs Backpack" est présent dans le panier
 
   # TC-CHECK-06
@@ -33,3 +34,8 @@ Feature: Commande & Tunnel de Commande
     When l'utilisateur clique sur le bouton "Finish" de la page Checkout "checkout-step-two"
     Then l'utilisateur est redirigé vers la page "/checkout-complete.html"
     Then le message de confirmation "Thank you for your order!" est affiché
+
+  
+
+
+  
