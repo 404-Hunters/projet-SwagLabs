@@ -45,7 +45,7 @@ class CartPageLocators:
     CART_ITEM = (By.CSS_SELECTOR, "div.cart_item[data-test='inventory-item']")
     CART_ITEM_NAME = (By.CLASS_NAME, "inventory_item_name")
     REMOVE_BUTTON = (By.CSS_SELECTOR, "button[data-test='remove']")
-    CHECKOUT_BUTTON = (By.CSS_SELECTOR, "button[data-test='continue']")
+    CHECKOUT_BUTTON = (By.CSS_SELECTOR, "button[data-test='checkout']")
     CONTINUE_SHOPPING = (By.ID, "continue-shopping")
 class CheckoutPageLocators:
     """Locators pour les pages de checkout"""   
