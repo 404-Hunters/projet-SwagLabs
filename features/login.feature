@@ -8,8 +8,8 @@ Feature: Authentification sur SauceDemo
   @tc-auth-01 @web @critical @smoke
   Scenario: TC-AUTH-01 - Connexion réussie avec standard_user
     Given l'utilisateur est sur la page Login
-    When l'utilisateur saisis "standard_user" dans le champ "Username"
-    And l'utilisateur saisis "secret_sauce" dans le champ "Password"
+    When l'utilisateur saisit "standard_user" dans le champ "Username"
+    And l'utilisateur saisit "secret_sauce" dans le champ "Password"
     And l'utilisateur clique sur le bouton "Login"
     Then l'utilisateur est redirigé vers la page "/inventory.html"
     And la liste des produits est affichée
@@ -17,8 +17,8 @@ Feature: Authentification sur SauceDemo
   @tc-auth-05 @web @critical @negative
   Scenario: TC-AUTH-05 - Connexion refusée pour locked_out_user
     Given l'utilisateur est sur la page Login
-    When l'utilisateur saisis "locked_out_user" dans le champ "Username"
-    And l'utilisateur saisis "secret_sauce" dans le champ "Password"
+    When l'utilisateur saisit "locked_out_user" dans le champ "Username"
+    And l'utilisateur saisit "secret_sauce" dans le champ "Password"
     And l'utilisateur clique sur le bouton "Login"
     Then le message d'erreur "Epic sadface: Sorry, this user has been locked out." est affiché
     And l'utilisateur reste sur la page Login
