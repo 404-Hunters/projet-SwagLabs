@@ -3,7 +3,7 @@ import logging
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
-from support.helpers import find_element, wait_for_element, wait_for_elements, click_element, send_keys_to_element, wait_for_url_contains
+from support.helpers import find_element, wait_for_element, wait_for_elements, wait_for_element_clickable, click_element, send_keys_to_element, wait_for_url_contains
 from support.locators import LoginPageLocators, InventoryPageLocators
 
 
@@ -102,18 +102,14 @@ def step_login_as_user(context, username):
 @when('l\'utilisateur clique sur le menu "{menu_name}"')
 def step_click_menu(context, menu_name):
     if menu_name == "Burger":
-        menu_button = wait_for_element(context.browser, (InventoryPageLocators.BURGER_MENU_BUTTON))
-        assert menu_button is not None, f"Menu {menu_name} non trouvé"
-        menu_button.click()
+        click_element(context.browser, InventoryPageLocators.BURGER_MENU_BUTTON)
     else:
         raise ValueError(f"Menu inconnu : {menu_name}")
 
 @when('l\'utilisateur clique sur le lien "{link_name}"')
 def step_click_link(context, link_name):
     if link_name == "Logout":
-        logout_link = wait_for_element(context.browser, (InventoryPageLocators.LOGOUT_LINK))
-        assert logout_link is not None, f"Lien {link_name} non trouvé"
-        logout_link.click()
+        click_element(context.browser, InventoryPageLocators.LOGOUT_LINK)
     else:
         raise ValueError(f"Lien inconnu : {link_name}")
     
