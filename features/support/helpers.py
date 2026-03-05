@@ -164,6 +164,21 @@ def get_element_text(driver, locator, timeout=10):
     element = wait_for_element(driver, locator, timeout)
     return element.text if element else ""
 
+def wait_for_text_in_element(driver, locator, expected_text, timeout=10):
+    """
+    Vérifie qu'un texte spécifique est présent dans un élément
+
+    Returns:
+        bool: True si le texte attendu est présent, False sinon
+    """
+    try:
+        return WebDriverWait(driver, timeout).until(
+            EC.text_to_be_present_in_element(locator, expected_text)
+        )
+    except TimeoutException:
+        print(f"Le texte '{expected_text}' n'est pas présent dans l'élément {locator} après {timeout} secondes")
+        return False
+
 
 def click_element(driver, locator, timeout=10):
     """
