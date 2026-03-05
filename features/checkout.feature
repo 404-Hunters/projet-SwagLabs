@@ -10,7 +10,6 @@ Feature: Tunnel de Commande - Coordonnées
   Background:
     Given l'utilisateur est connecté en tant que "standard_user"
     And l'article "Sauce Labs Backpack" est présent dans le panier
-    And l'utilisateur est sur la page "/cart.html"
 
   # ============================================================
   # STORY-04 : Tunnel de Commande - Coordonnées
@@ -20,7 +19,7 @@ Feature: Tunnel de Commande - Coordonnées
   @TC-CHECK-06 @web @medium @checkout @validation
   Scenario: Soumission avec tous les champs vides
     Given l'utilisateur est sur la page "/checkout-step-one.html"
-    When l'utilisateur clique sur le bouton "Continue" de la page checkout
+    When l'utilisateur clique sur le bouton "Continue" de la page Checkout "checkout-step-one"
     Then un seul message d'erreur "Error: First Name is required" est affiché
     And l'utilisateur reste sur la page "/checkout-step-one.html"
 
