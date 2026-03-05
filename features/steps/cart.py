@@ -48,7 +48,7 @@ def step_naviguer_page_detail(context, product_name):
 
 @when('l\'utilisateur clique sur le bouton "Add to cart" depuis la fiche détail')
 def step_ajout_panier_fiche_detail(context):
-    button_element = wait_for_element(context.browser, ProductPageLocators.CTA_BUTTON)
+    button_element = wait_for_element_clickable(context.browser, ProductPageLocators.CTA_BUTTON)
     assert button_element is not None, "Le bouton 'Add to cart' sur la fiche détail n'a pas été trouvé"
     button_element.click()
 
