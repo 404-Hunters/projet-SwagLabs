@@ -264,7 +264,7 @@ def localiser_produit_par_nom(context, product_name):
     """
     xpath = f"//div[text()='{product_name}' and @data-test='inventory-item-name']//ancestor::div[@data-test='inventory-item']"
     product_element = wait_for_element_visible(context.browser, (By.XPATH, xpath))
-    assert product_element is not None, f"Produit '{product_name}' non trouvé sur la page Inventory"
+    assert product_element is not None, f"Produit '{product_name}' non trouvé sur la page"
     return product_element
 
 def localiser_cta_produit(context, product_name):
@@ -278,8 +278,11 @@ def localiser_cta_produit(context, product_name):
     product_element = localiser_produit_par_nom(context, product_name)
     # Localiser le bouton à l'intérieur du produit
     xpath_button = ".//button[contains(@data-test, 'add-to-cart') or contains(@data-test, 'remove')]"
-    button = product_element.find_element(By.XPATH, xpath_button)
-    assert button is not None, f"Le bouton n'a pas été trouvé"
+    try:
+        button = product_element.find_element(By.XPATH, xpath_button)
+    except NoSuchElementException:
+        print(f"Le bouton d'ajout ou de suppression pour le produit '{product_name}' n'a pas été trouvé")
+        return None
     return button
 
 def click_bouton_link_panier(context):
