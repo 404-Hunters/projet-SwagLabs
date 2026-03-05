@@ -23,7 +23,7 @@ Feature: Commande & Tunnel de Commande
   @TC-CHECK-08 @web @high @checkout @parcours-complet @smoke
   Scenario: Parcours de commande complet
     Given l'utilisateur est sur la page "/checkout-step-one.html"
-      When l'utilisateur remplit le formulaire de commande:
+    When l'utilisateur remplit le formulaire de commande:
       | champ           | valeur |
       | First Name      | John   |
       | Last Name       | Doe    |
