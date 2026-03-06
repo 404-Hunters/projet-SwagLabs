@@ -1,4 +1,5 @@
 import os
+import re
 import json
 import allure
 from selenium import webdriver
@@ -114,7 +115,13 @@ def after_scenario(context, scenario):
             )
 
             os.makedirs("screenshots", exist_ok=True)
-            safe_name       = scenario.name.replace(" ", "_").replace("/", "-")
+            # Supprime tous les caractères interdits par NTFS / GitHub Actions
+            # (: " < > | * ? @ parenthèses et caractères non-ASCII)
+            safe_name = scenario.name
+            safe_name = safe_name.replace(" ", "_")
+            safe_name = re.sub(r'[:"<>|*?@\(\)\r\n/]', "", safe_name)
+            safe_name = re.sub(r'[^\x00-\x7F]', "", safe_name)  # retire accents/émojis
+            safe_name = re.sub(r'_+', "_", safe_name).strip("_")  # dédoublonne les _
             screenshot_path = f"screenshots/{safe_name}.png"
             context.browser.save_screenshot(screenshot_path)
             step_logger.info(f"Screenshot sauvegardé : {screenshot_path}")
