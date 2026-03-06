@@ -109,7 +109,7 @@ jobs:
           retention-days: 7
 
   # ── Job : mise à jour des matrices d'exécution sur les tickets Jira ────────
-  matrix:
+  matrix-execution-jira:
     name: Matrices d'exécution Jira
     runs-on: ubuntu-latest
     needs: test
@@ -257,7 +257,7 @@ jobs:
   jira:
     name: Ticket de bug Jira
     runs-on: ubuntu-latest
-    needs: matrix
+    needs: matrix-execution-jira
     if: always()
 
     steps:
@@ -278,256 +278,24 @@ jobs:
           echo "$COUNT scénario(s) en échec détecté(s)"
 
       # ── 14. Créer un ticket de bug par échec ─────────────────────────────
+      - name: Checkout du code (pour récupérer le script)
+        uses: actions/checkout@v4
+        with:
+          sparse-checkout: |
+            .github/scripts/
+
       - name: Créer les tickets de bug Jira
         if: steps.check.outputs.count > 0
-        run: |
-          python3 - <<'EOF'
-          import glob, json, base64, urllib.request
-          from datetime import datetime, timezone
-
-          JIRA_BASE  = "${{ secrets.JIRA_BASE_URL }}"
-          branch     = "${{ github.ref_name }}"
-          commit     = "${{ github.sha }}"
-          actor      = "${{ github.actor }}"
-          allure_url = "https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/"
-
-          credentials = base64.b64encode(
-              f"${{ secrets.JIRA_USER_EMAIL }}:${{ secrets.JIRA_API_TOKEN }}"
-              .encode()
-          ).decode()
-          headers = {
-              "Authorization": f"Basic {credentials}",
-              "Content-Type":  "application/json",
-          }
-
-          # ── Helpers ADF ──────────────────────────────────────────────────
-          def adf_text(text):
-              return {"type": "text", "text": str(text)}
-
-          def adf_paragraph(*texts):
-              return {"type": "paragraph", "content": list(texts)}
-
-          def adf_code_block(code):
-              return {
-                  "type": "codeBlock",
-                  "attrs": {"language": "text"},
-                  "content": [adf_text(code)]
-              }
-
-          def adf_heading(text, level=3):
-              return {
-                  "type": "heading",
-                  "attrs": {"level": level},
-                  "content": [adf_text(text)]
-              }
-
-          def adf_bullet_list(items):
-              return {
-                  "type": "bulletList",
-                  "content": [
-                      {"type": "listItem", "content": [adf_paragraph(adf_text(item))]}
-                      for item in items
-                  ]
-              }
-
-          # ── Appels API Jira ──────────────────────────────────────────────
-          def create_ticket(summary, description_adf):
-              fields = {
-                  "project":     {"key": "PSD"},
-                  "issuetype":   {"name": "Bug"},
-                  "summary":     summary,
-                  "description": description_adf,
-              }
-
-              payload = json.dumps({"fields": fields}).encode("utf-8")
-              req = urllib.request.Request(
-                  f"{JIRA_BASE}/rest/api/3/issue",
-                  data=payload,
-                  headers=headers,
-                  method="POST",
-              )
-              try:
-                  with urllib.request.urlopen(req) as resp:
-                      return json.load(resp).get("key")
-              except urllib.error.HTTPError as e:
-                  error_body = e.read().decode("utf-8")
-                  print(f"HTTP {e.code} — Reponse Jira : {error_body}")
-                  raise
-
-          def transition_to_todo(issue_key):
-              req = urllib.request.Request(
-                  f"{JIRA_BASE}/rest/api/3/issue/{issue_key}/transitions",
-                  headers=headers,
-              )
-              with urllib.request.urlopen(req) as resp:
-                  transitions = json.load(resp)["transitions"]
-              todo_id = next(
-                  (t["id"] for t in transitions if t["name"].lower() in ("to do", "à faire")),
-                  None
-              )
-              if todo_id:
-                  payload = json.dumps({"transition": {"id": todo_id}}).encode("utf-8")
-                  req = urllib.request.Request(
-                      f"{JIRA_BASE}/rest/api/3/issue/{issue_key}/transitions",
-                      data=payload,
-                      headers=headers,
-                      method="POST",
-                  )
-                  with urllib.request.urlopen(req):
-                      return True
-              return False
-
-          # ── Boucle sur chaque fichier d'échec ────────────────────────────
-          for path in sorted(glob.glob("reports/failures/*.json")):
-              with open(path, encoding="utf-8") as f:
-                  r = json.load(f)
-
-              username   = r.get("username", "inconnu")
-              scenario   = r.get("scenario", "")
-              tags       = r.get("tags", [])
-              step       = r.get("failed_step") or {}
-              screenshot = r.get("screenshot_path", "")
-
-              # ── Identifiants ─────────────────────────────────────────────
-              tc_tag = next((t for t in tags if t.startswith("tc-")), None)
-              if tc_tag:
-                  tc_id  = tc_tag.upper().replace("TC-", "")
-                  bug_id = f"BUG-{tc_id}-{username}"
-              else:
-                  tc_id  = "UNKNOWN"
-                  bug_id = f"BUG-UNKNOWN-{username}"
-
-              # ── Variables contextuelles ──────────────────────────────────
-              run_date = datetime.now(timezone.utc).strftime("%d/%m/%Y")
-
-              module = "Inconnu"
-              if tc_tag:
-                  if   "cat"   in tc_tag: module = "Catalogue"
-                  elif "auth"  in tc_tag: module = "Authentification"
-                  elif "cart"  in tc_tag: module = "Panier"
-                  elif "order" in tc_tag: module = "Commande"
-
-              then_steps = [s for s in r.get("steps", []) if s.startswith("then")]
-              expected   = then_steps[-1].replace("then ", "") if then_steps else "Voir le scénario Gherkin"
-              obtained   = step.get("error", "N/A")
-
-              summary = f"[BUG] {bug_id}"
-
-              # ── Étapes de reproduction (protégé contre liste vide) ────────
-              steps_list = r.get("steps", [])
-              steps_block = (
-                  {
-                      "type": "orderedList",
-                      "content": [
-                          {"type": "listItem", "content": [adf_paragraph(adf_text(s))]}
-                          for s in steps_list
-                      ]
-                  }
-                  if steps_list
-                  else adf_paragraph(adf_text("Aucune étape disponible."))
-              )
-
-              # ── Description ADF ──────────────────────────────────────────
-              description_adf = {
-                  "type": "doc", "version": 1,
-                  "content": [
-                      # ── Titre ─────────────────────────────────────────
-                      adf_heading(f"ANOMALIE {bug_id} - Echec du scenario {scenario}", 3),
-
-                      # ── Informations générales ─────────────────────────
-                      adf_heading("Informations generales", 3),
-                      {"type": "paragraph", "content": [{"type": "text", "text": "ID : ", "marks": [{"type": "strong"}]}, {"type": "text", "text": bug_id}]},
-                      {"type": "paragraph", "content": [{"type": "text", "text": "Statut : ", "marks": [{"type": "strong"}]}, {"type": "text", "text": "Ouvert"}]},
-                      {"type": "paragraph", "content": [{"type": "text", "text": "Priorite : ", "marks": [{"type": "strong"}]}, {"type": "text", "text": "Majeure"}]},
-                      {"type": "paragraph", "content": [{"type": "text", "text": "Severite : ", "marks": [{"type": "strong"}]}, {"type": "text", "text": "Haute"}]},
-                      {"type": "paragraph", "content": [{"type": "text", "text": "Module : ", "marks": [{"type": "strong"}]}, {"type": "text", "text": module}]},
-                      {"type": "paragraph", "content": [{"type": "text", "text": "Environnement : ", "marks": [{"type": "strong"}]}, {"type": "text", "text": "Test - Chrome - Ubuntu (CI)"}]},
-                      {"type": "paragraph", "content": [{"type": "text", "text": "Rapporte par : ", "marks": [{"type": "strong"}]}, {"type": "text", "text": actor}]},
-                      {"type": "paragraph", "content": [{"type": "text", "text": "Date : ", "marks": [{"type": "strong"}]}, {"type": "text", "text": run_date}]},
-
-                      # ── Description ────────────────────────────────────
-                      adf_heading("Description", 3),
-                      adf_paragraph(adf_text(
-                          f"Echec automatique detecte sur le scenario '{scenario}' "
-                          f"lors de l'execution avec le profil '{username}'."
-                      )),
-
-                      # ── Étapes de reproduction ─────────────────────────
-                      adf_heading("Etapes de reproduction", 3),
-                      steps_block,
-
-                      # ── Résultat obtenu ────────────────────────────────
-                      adf_heading("Resultat obtenu", 3),
-                      adf_code_block(obtained),
-
-                      # ── Résultat attendu ───────────────────────────────
-                      adf_heading("Resultat attendu", 3),
-                      adf_paragraph(adf_text(expected)),
-
-                      # ── Impact ─────────────────────────────────────────
-                      adf_heading("Impact", 3),
-                      adf_paragraph(adf_text(
-                          f"Le profil '{username}' ne peut pas effectuer cette action correctement. "
-                          f"Risque de regression fonctionnelle sur le module {module}."
-                      )),
-
-                      # ── Preuves ────────────────────────────────────────
-                      adf_heading("Preuves", 3),
-                      adf_bullet_list([
-                          f"Screenshot : {screenshot} (voir artefacts du run GitHub Actions)",
-                          f"Rapport Allure : {allure_url}",
-                      ]),
-
-                      # ── Informations techniques ────────────────────────
-                      adf_heading("Informations techniques", 3),
-                      adf_code_block(
-                          f"Etape en echec : {step.get('step_type', '')} {step.get('step_name', '')}\n"
-                          f"Erreur         : {obtained}\n"
-                          f"Tags           : {', '.join(tags)}\n"
-                          f"Workflow       : ${{ github.workflow }}"
-                      ),
-                  ]
-              }
-
-              # ── Création du ticket et transition ─────────────────────────
-              issue_key = create_ticket(summary, description_adf)
-              in_todo   = transition_to_todo(issue_key)
-              status    = "✅ To Do" if in_todo else "⚠️  Backlog"
-              print(f"{issue_key} [{status}] — {summary}")
-
-              # ── Lien vers le ticket de cas de test ───────────────────────
-              test_case_key = next(
-                  (t.upper() for t in tags if t.upper().startswith("PSD-")),
-                  None
-              )
-              if test_case_key and test_case_key != issue_key:
-                  link_payload = json.dumps({
-                      "type":         {"name": "Relates"},
-                      "inwardIssue":  {"key": issue_key},
-                      "outwardIssue": {"key": test_case_key},
-                      "comment": {
-                          "body": {
-                              "type": "doc", "version": 1,
-                              "content": [adf_paragraph(
-                                  adf_text(f"Bug detecte automatiquement par la CI — {bug_id}")
-                              )]
-                          }
-                      }
-                  }).encode("utf-8")
-                  link_req = urllib.request.Request(
-                      f"{JIRA_BASE}/rest/api/3/issueLink",
-                      data=link_payload,
-                      headers=headers,
-                      method="POST",
-                  )
-                  try:
-                      with urllib.request.urlopen(link_req):
-                          print(f"  🔗 Lie a {test_case_key} (elements associes)")
-                  except Exception as e:
-                      print(f"  ⚠️  Lien echoue vers {test_case_key} : {e}")
-              else:
-                  print(f"  ⚠️  Pas de tag PSD-XX dans les tags — lien ignore")
-          EOF
+        run: python3 .github/scripts/create_jira_bugs.py
+        env:
+          JIRA_BASE_URL: ${{ secrets.JIRA_BASE_URL }}
+          JIRA_USER_EMAIL: ${{ secrets.JIRA_USER_EMAIL }}
+          JIRA_API_TOKEN: ${{ secrets.JIRA_API_TOKEN }}
+          GITHUB_REF_NAME: ${{ github.ref_name }}
+          GITHUB_SHA: ${{ github.sha }}
+          GITHUB_ACTOR: ${{ github.actor }}
+          GITHUB_REPOSITORY_OWNER: ${{ github.repository_owner }}
+          GITHUB_REPOSITORY: ${{ github.event.repository.name }}
 
   # ── Job séparé : rapport Allure + GitHub Pages ────────────────────────────
   report:
