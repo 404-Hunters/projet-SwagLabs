@@ -125,133 +125,19 @@ jobs:
           path: reports/results/
 
       # ── 11. Mise à jour de la matrice sur chaque ticket de cas de test ────
+      - name: Checkout du code (pour récupérer le script)
+        uses: actions/checkout@v4
+        with:
+          sparse-checkout: |
+            .github/scripts/
+
       - name: Mettre à jour les matrices d'exécution Jira
-        run: |
-          python3 - <<'EOF'
-          import glob, json, base64, urllib.request
-          from datetime import datetime
-          from collections import defaultdict
-
-          CUSTOM_FIELD = "customfield_10104"
-          JIRA_BASE    = "${{ secrets.JIRA_BASE_URL }}"
-          ACTOR        = "${{ github.actor }}"
-          RUN_DATE     = datetime.utcnow().strftime("%d/%m/%Y")
-
-          credentials = base64.b64encode(
-              f"${{ secrets.JIRA_USER_EMAIL }}:${{ secrets.JIRA_API_TOKEN }}"
-              .encode()
-          ).decode()
-          headers = {
-              "Authorization": f"Basic {credentials}",
-              "Content-Type":  "application/json",
-          }
-
-          def jira_put(path, payload):
-              req = urllib.request.Request(
-                  f"{JIRA_BASE}{path}",
-                  data=json.dumps(payload).encode("utf-8"),
-                  headers=headers,
-                  method="PUT",
-              )
-              with urllib.request.urlopen(req) as r:
-                  return r.status
-
-          # ── 1. Charge tous les résultats (pass + fail) ───────────────────
-          results = defaultdict(dict)
-
-          for path in glob.glob("reports/results/*.json"):
-              with open(path, encoding="utf-8") as f:
-                  r = json.load(f)
-              for tag in r.get("tags", []):
-                  if tag.startswith("tc-"):
-                      results[tag][r["username"]] = {
-                          "steps":  r.get("steps", []),
-                          "status": r.get("status", "PASS"),
-                          "tags":   r.get("tags", []),
-                      }
-
-          if not results:
-              print("Aucun résultat trouvé dans reports/results/ — job ignoré")
-              exit(0)
-
-          # ── 2. Pour chaque cas de test, construit et pousse la matrice ───
-          ALL_USERS = [
-              "standard_user", "problem_user", "locked_out_user",
-              "visual_user", "performance_glitch_user", "error_user",
-          ]
-
-          for tc_tag, user_data in sorted(results.items()):
-
-              first_result = next(iter(user_data.values()))
-              issue_key = next(
-                  (t for t in first_result.get("tags", []) if t.upper().startswith("PSD-")),
-                  None
-              )
-              if not issue_key:
-                  print(f"⚠️  Pas de tag PSD-XX trouvé pour {tc_tag} — ticket ignoré")
-                  continue
-              issue_key = issue_key.upper()
-
-              steps = first_result["steps"]
-
-              def adf_cell(text, is_header=False):
-                  cell_type = "tableHeader" if is_header else "tableCell"
-                  return {
-                      "type": cell_type,
-                      "attrs": {},
-                      "content": [{"type": "paragraph", "content": [{"type": "text", "text": str(text)}]}]
-                  }
-
-              def adf_row(cells):
-                  return {"type": "tableRow", "content": cells}
-
-              header_row = adf_row(
-                  [adf_cell("Étapes du Test (Gherkin)", True)]
-                  + [adf_cell(u, True) for u in ALL_USERS]
-              )
-
-              step_rows = []
-              for i, step in enumerate(steps, 1):
-                  cells = [adf_cell(f"{i}. {step}")]
-                  for u in ALL_USERS:
-                      if u not in user_data:
-                          cells.append(adf_cell("-"))
-                      elif user_data[u]["status"] == "PASS":
-                          cells.append(adf_cell("✅"))
-                      else:
-                          cells.append(adf_cell("❌"))
-                  step_rows.append(adf_row(cells))
-
-              tc_id = tc_tag.upper().replace("TC-", "")
-              final_cells = [adf_cell("RÉSULTAT FINAL")]
-              for u in ALL_USERS:
-                  if u not in user_data:
-                      final_cells.append(adf_cell("-"))
-                  elif user_data[u]["status"] == "PASS":
-                      final_cells.append(adf_cell("✅ PASS"))
-                  else:
-                      final_cells.append(adf_cell(f"❌ BUG-{tc_id}-{u}"))
-              final_row_adf = adf_row(final_cells)
-
-              adf_value = {
-                  "type": "doc", "version": 1,
-                  "content": [
-                      {"type": "paragraph", "content": [{"type": "text", "text": f"Date de campagne : {RUN_DATE}"}]},
-                      {
-                          "type": "table",
-                          "attrs": {"isNumberColumnEnabled": False, "layout": "full-width"},
-                          "content": [header_row] + step_rows + [final_row_adf]
-                      },
-                      {"type": "paragraph", "content": [{"type": "text", "text": f"Exécuté par : {ACTOR}"}]},
-                  ]
-              }
-
-              status = jira_put(
-                  f"/rest/api/3/issue/{issue_key}",
-                  {"fields": {CUSTOM_FIELD: adf_value}}
-              )
-              print(f"{'✅' if status == 204 else '❌'} {issue_key} ({tc_tag}) — matrice mise à jour (HTTP {status})")
-          EOF
+        run: python3 .github/scripts/update_jira_matrices.py
+        env:
+          JIRA_BASE_URL: ${{ secrets.JIRA_BASE_URL }}
+          JIRA_USER_EMAIL: ${{ secrets.JIRA_USER_EMAIL }}
+          JIRA_API_TOKEN: ${{ secrets.JIRA_API_TOKEN }}
+          GITHUB_ACTOR: ${{ github.actor }}
 
   # ── Job : création d'un ticket de bug par échec ──────────────────────────
   jira:
