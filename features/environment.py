@@ -104,6 +104,18 @@ def after_step(context, step):
 def after_scenario(context, scenario):
     if hasattr(context, "browser"):
 
+        # ── Nom de fichier safe calculé une seule fois ────────────────────
+        safe_name = scenario.name
+        safe_name = safe_name.replace(" ", "_")
+        safe_name = re.sub(r'[:"<>|*?@\(\)\r\n/]', "", safe_name)
+        safe_name = re.sub(r'[^\x00-\x7F]', "", safe_name)  # retire accents/émojis
+        safe_name = re.sub(r'_+', "_", safe_name).strip("_")  # dédoublonne les _
+
+        # ── Username extrait une seule fois ───────────────────────────────
+        username = "inconnu"
+        if " — " in scenario.name:
+            username = scenario.name.split(" — ")[-1].strip()
+
         if scenario.status == "failed":
             step_logger.error(f"Scénario échoué: {scenario.name}")
 
@@ -115,45 +127,49 @@ def after_scenario(context, scenario):
             )
 
             os.makedirs("screenshots", exist_ok=True)
-            # Supprime tous les caractères interdits par NTFS / GitHub Actions
-            # (: " < > | * ? @ parenthèses et caractères non-ASCII)
-            safe_name = scenario.name
-            safe_name = safe_name.replace(" ", "_")
-            safe_name = re.sub(r'[:"<>|*?@\(\)\r\n/]', "", safe_name)
-            safe_name = re.sub(r'[^\x00-\x7F]', "", safe_name)  # retire accents/émojis
-            safe_name = re.sub(r'_+', "_", safe_name).strip("_")  # dédoublonne les _
             screenshot_path = f"screenshots/{safe_name}.png"
             context.browser.save_screenshot(screenshot_path)
             step_logger.info(f"Screenshot sauvegardé : {screenshot_path}")
 
-            # ── Rapport JSON pour le workflow CI / Jira ───────────────────
-            # Extrait le username depuis le nom du scénario (suffixe "— <username>")
-            # Exemple : "TC-CAT-36 - Tri par nom — problem_user"
-            username = "inconnu"
-            if " — " in scenario.name:
-                username = scenario.name.split(" — ")[-1].strip()
-
-            # Extrait les tags du scénario (ex: ["tc-cat-36", "web", "sort"])
-            tags = list(scenario.effective_tags)
-
+            # ── Rapport JSON échec pour le ticket Jira ────────────────────
             failure_report = {
                 "scenario":        scenario.name,
                 "username":        username,
-                "tags":            tags,
+                "tags":            list(scenario.effective_tags),
                 "feature":         scenario.feature.filename,
                 "failed_step":     context.failed_step,
                 "screenshot_path": screenshot_path,
             }
-
-            # Un fichier par scénario échoué → un ticket Jira par échec
             report_path = f"reports/failures/{safe_name}.json"
             with open(report_path, "w", encoding="utf-8") as f:
                 json.dump(failure_report, f, ensure_ascii=False, indent=2)
-
             step_logger.info(f"Rapport d'échec écrit : {report_path}")
 
         else:
             step_logger.info(f"Scénario réussi: {scenario.name}")
+
+        # ── Rapport résultat pour la matrice Jira (pass ET fail) ─────────
+        tc_tag = next(
+            (t for t in scenario.effective_tags if t.startswith("tc-")),
+            None
+        )
+
+        if tc_tag:
+            os.makedirs("reports/results", exist_ok=True)
+            result_report = {
+                "scenario": scenario.name,
+                "username": username,
+                "tags":     list(scenario.effective_tags),
+                "status":   "PASS" if scenario.status == "passed" else "FAIL",
+                "steps":    [
+                    f"{s.step_type} {s.name}"
+                    for s in scenario.steps
+                ],
+            }
+            result_safe  = re.sub(r'[^\w-]', "_", f"{tc_tag}_{username}")
+            result_path  = f"reports/results/{result_safe}.json"
+            with open(result_path, "w", encoding="utf-8") as f:
+                json.dump(result_report, f, ensure_ascii=False, indent=2)
 
         step_logger.info("Fermeture du navigateur")
         context.browser.quit()

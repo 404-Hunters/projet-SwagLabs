@@ -6,7 +6,7 @@ Feature: Tri du Catalogue Produits
     Given l'utilisateur est connecté avec "<username>" et "secret_sauce"
     And l'utilisateur est sur la page "/inventory.html"
 
-  @tc-cat-36 @web @medium @sort
+  @tc-cat-36 @PSD-118 @web @medium @sort
   Scenario Outline: TC-CAT-36 - Tri par nom (A à Z) depuis un ordre différent - Utilisateur: <username>
     Given l'utilisateur sélectionne l'option de tri "Name (Z to A)"
     When l'utilisateur sélectionne l'option de tri "Name (A to Z)"
