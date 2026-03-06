@@ -17,7 +17,7 @@ Feature: Commande & Calcul du Total
       | Sauce Labs Bolt T-Shirt  | 1        | 15.99         |
       | Sauce Labs Fleece Jacket | 1        | 49.99         |
 
- # TC-CHECK-10
+  # TC-CHECK-10
   @TC-CHECK-10 @web @medium @checkout @calcul_total
   Scenario: Vérification du calcul du total de la commande sans taxe
     Given l'utilisateur est sur la page "/checkout-step-one.html"
@@ -30,6 +30,29 @@ Feature: Commande & Calcul du Total
     Then l'utilisateur est redirigé vers la page "/checkout-step-two.html"
     And le total des prix de la commande sans taxe affiche "105.96"
   
+  # TC-CHECK-11 : Calcul de la taxe (8%)
+  @TC-CHECK-11 @web @medium @checkout @calcul_total
+  Scenario: Vérification du calcul de la taxe (8%)
+    Given l'utilisateur est sur la page "/checkout-step-one.html"
+    When l'utilisateur remplit le formulaire de commande:
+      | champ           | valeur |
+      | First Name      | John   |
+      | Last Name       | Doe    |
+      | Zip/Postal Code | 12345  |
+    And l'utilisateur clique sur le bouton "Continue" de la page Checkout "checkout-step-one"
+    Then l'utilisateur est redirigé vers la page "/checkout-step-two.html"
+    And le montant de la taxe affiche "8.48"
 
-
+  # TC-CHECK-12 : Vérification du total de la commande avec taxe
+  @TC-CHECK-12 @web @medium @checkout @calcul_total
+  Scenario: Vérification du total de la commande avec taxe
+    Given l'utilisateur est sur la page "/checkout-step-one.html"
+    When l'utilisateur remplit le formulaire de commande:
+      | champ           | valeur |
+      | First Name      | John   |
+      | Last Name       | Doe    |
+      | Zip/Postal Code | 12345  |
+    And l'utilisateur clique sur le bouton "Continue" de la page Checkout "checkout-step-one"
+    Then l'utilisateur est redirigé vers la page "/checkout-step-two.html"
+    And le total de la commande avec taxe affiche "114.44"
   

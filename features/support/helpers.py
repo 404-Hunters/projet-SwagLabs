@@ -4,7 +4,7 @@ Fonctions utilitaires pour les tests Selenium
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import TimeoutException, NoSuchElementException
-from support.locators import InventoryPageLocators, CartPageLocators
+from support.locators import InventoryPageLocators
 from selenium.webdriver.common.by import By
 
 

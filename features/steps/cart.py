@@ -1,7 +1,6 @@
 from behave import given, when, then, step
 from selenium.webdriver.common.by import By
-from selenium.webdriver.support.ui import Select
-from support.helpers import find_element, find_elements, wait_for_element, wait_for_element_visible, wait_for_element_clickable, wait_for_elements, wait_for_url_contains, localiser_produit_par_nom, localiser_cta_produit, click_bouton_link_panier
+from support.helpers import find_element, find_elements, wait_for_element_visible, wait_for_element_clickable, wait_for_elements, wait_for_url_contains, localiser_produit_par_nom, localiser_cta_produit, click_bouton_link_panier
 from support.locators import InventoryPageLocators, ProductPageLocators, CartPageLocators, CheckoutPageLocators
 
 
