@@ -23,7 +23,7 @@ import json
 import base64
 import urllib.request
 import os
-from datetime import datetime
+from datetime import datetime, timezone
 from collections import defaultdict
 
 
@@ -33,7 +33,7 @@ JIRA_BASE = os.environ.get("JIRA_BASE_URL", "")
 JIRA_USER_EMAIL = os.environ.get("JIRA_USER_EMAIL", "")
 JIRA_API_TOKEN = os.environ.get("JIRA_API_TOKEN", "")
 ACTOR = os.environ.get("GITHUB_ACTOR", "unknown")
-RUN_DATE = datetime.utcnow().strftime("%d/%m/%Y")
+RUN_DATE = datetime.now(timezone.utc).strftime("%d/%m/%Y")
 
 # Liste complète des profils utilisateurs à tester
 ALL_USERS = [

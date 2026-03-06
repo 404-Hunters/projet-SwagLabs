@@ -116,7 +116,14 @@ jobs:
     if: always()
 
     steps:
-      # ── 10. Récupération des résultats complets (pass + fail) ─────────────
+      # ── 10. Checkout du code (pour récupérer le script) ───────────────────
+      - name: Checkout du code (pour récupérer le script)
+        uses: actions/checkout@v4
+        with:
+          sparse-checkout: |
+            .github/scripts/
+
+      # ── 11. Récupération des résultats complets (pass + fail) ─────────────
       - name: Télécharger les résultats complets
         uses: actions/download-artifact@v4
         continue-on-error: true
@@ -124,13 +131,7 @@ jobs:
           name: test-results
           path: reports/results/
 
-      # ── 11. Mise à jour de la matrice sur chaque ticket de cas de test ────
-      - name: Checkout du code (pour récupérer le script)
-        uses: actions/checkout@v4
-        with:
-          sparse-checkout: |
-            .github/scripts/
-
+      # ── 12. Mise à jour de la matrice sur chaque ticket de cas de test ────
       - name: Mettre à jour les matrices d'exécution Jira
         run: python3 .github/scripts/update_jira_matrices.py
         env:
@@ -147,7 +148,14 @@ jobs:
     if: always()
 
     steps:
-      # ── 12. Récupération des rapports d'échec JSON ───────────────────────
+      # ── 12. Checkout du code (pour récupérer le script) ───────────────────
+      - name: Checkout du code (pour récupérer le script)
+        uses: actions/checkout@v4
+        with:
+          sparse-checkout: |
+            .github/scripts/
+
+      # ── 13. Récupération des rapports d'échec JSON ───────────────────────
       - name: Télécharger les rapports d'échec
         uses: actions/download-artifact@v4
         continue-on-error: true
@@ -155,7 +163,7 @@ jobs:
           name: failure-reports
           path: reports/failures/
 
-      # ── 13. Vérifier s'il y a des échecs ─────────────────────────────────
+      # ── 14. Vérifier s'il y a des échecs ─────────────────────────────────
       - name: Vérifier la présence d'échecs
         id: check
         run: |
@@ -163,13 +171,7 @@ jobs:
           echo "count=$COUNT" >> $GITHUB_OUTPUT
           echo "$COUNT scénario(s) en échec détecté(s)"
 
-      # ── 14. Créer un ticket de bug par échec ─────────────────────────────
-      - name: Checkout du code (pour récupérer le script)
-        uses: actions/checkout@v4
-        with:
-          sparse-checkout: |
-            .github/scripts/
-
+      # ── 15. Créer un ticket de bug par échec ─────────────────────────────
       - name: Créer les tickets de bug Jira
         if: steps.check.outputs.count > 0
         run: python3 .github/scripts/create_jira_bugs.py
