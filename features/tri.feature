@@ -23,6 +23,8 @@ Feature: Tri du Catalogue Produits
       | username      |
       | standard_user |
       | problem_user  |
+      | locked_out_user  |
+
 
   @tc-cat-37 @web @medium @sort
   Scenario Outline: TC-CAT-37 - Tri par nom (Z à A) - Utilisateur: <username>
