@@ -104,17 +104,35 @@ def after_step(context, step):
 def after_scenario(context, scenario):
     if hasattr(context, "browser"):
 
+        # ── Username extrait depuis le nom du scénario ──────────────────
+        # Supporte les formats :
+        #   "TC-CAT-36 ... - Utilisateur: problem_user -- @1.2"  (Scenario Outline)
+        #   "TC-CAT-36 ... — problem_user"                        (format manuel)
+        import re as _re
+        username = "inconnu"
+        _name = scenario.name
+
+        # Format Scenario Outline : "Utilisateur: <username>"
+        _m = _re.search(r'Utilisateur[:\s]+([\w]+)', _name)
+        if _m:
+            username = _m.group(1).strip()
+        # Format manuel : "— <username>"
+        elif " — " in _name:
+            username = _name.split(" — ")[-1].strip()
+        # Format avec tiret simple : "- <username>"
+        elif " - " in _name:
+            _parts = _name.rsplit(" - ", 1)
+            _candidate = _parts[-1].split(" --")[0].strip()
+            if _candidate in ("standard_user", "problem_user", "locked_out_user",
+                              "visual_user", "performance_glitch_user", "error_user"):
+                username = _candidate
+
         # ── Nom de fichier safe calculé une seule fois ────────────────────
         safe_name = scenario.name
         safe_name = safe_name.replace(" ", "_")
         safe_name = re.sub(r'[:"<>|*?@\(\)\r\n/]', "", safe_name)
         safe_name = re.sub(r'[^\x00-\x7F]', "", safe_name)  # retire accents/émojis
         safe_name = re.sub(r'_+', "_", safe_name).strip("_")  # dédoublonne les _
-
-        # ── Username extrait une seule fois ───────────────────────────────
-        username = "inconnu"
-        if " — " in scenario.name:
-            username = scenario.name.split(" — ")[-1].strip()
 
         if scenario.status == "failed":
             step_logger.error(f"Scénario échoué: {scenario.name}")
