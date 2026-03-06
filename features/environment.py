@@ -1,4 +1,5 @@
 import os
+import json
 import allure
 from selenium import webdriver
 from selenium.webdriver.support.ui import WebDriverWait
@@ -23,24 +24,30 @@ logger = colorlog.getLogger()
 logger.addHandler(handler)
 logger.setLevel(logging.INFO)
 
-# Logger pour les steps
 step_logger = logging.getLogger('steps')
+
 
 def before_all(context):
     print("Début des tests")
     context.base_url = "https://www.saucedemo.com"
+    context.headless  = os.getenv("HEADLESS", "false").lower() == "true"
 
-    # ✅ Détection automatique du mode Headless via la variable d'env du YAML
-    context.headless = os.getenv("HEADLESS", "false").lower() == "true"
+    # Dossier qui contiendra un fichier JSON par scénario échoué
+    # Le workflow CI lira ces fichiers pour créer les tickets Jira
+    os.makedirs("reports/failures", exist_ok=True)
+
 
 def before_scenario(context, scenario):
     step_logger.info(f"Début du scénario: {scenario.name}")
+
+    # Réinitialise le step en échec à chaque scénario
+    context.failed_step = None
+
     if "web" in scenario.effective_tags:
         step_logger.info("Initialisation du navigateur Chrome")
 
         options = webdriver.ChromeOptions()
 
-        # ✅ Mode Headless dynamique pour la CI
         if context.headless:
             step_logger.info("Mode HEADLESS activé (CI)")
             options.add_argument("--headless=new")
@@ -50,7 +57,6 @@ def before_scenario(context, scenario):
         options.add_argument("--disable-dev-shm-usage")
         options.add_argument("--disable-extensions")
 
-        # Désactive le gestionnaire de mots de passe
         prefs = {
             "credentials_enable_service": False,
             "profile.password_manager_enabled": False,
@@ -58,50 +64,93 @@ def before_scenario(context, scenario):
         }
         options.add_experimental_option("prefs", prefs)
 
-        # ✅ Selenium 4 gère ChromeDriver automatiquement — plus besoin de ChromeDriverManager
         context.browser = webdriver.Chrome(options=options)
 
         if not context.headless:
             context.browser.maximize_window()
-        step_logger.info("Navigateur Chrome initialisé avec succès")
 
-        # Ajouter le WebDriverWait réutilisable
+        step_logger.info("Navigateur Chrome initialisé avec succès")
         context.wait = WebDriverWait(context.browser, 10)
+
 
 def before_step(context, step):
     step_logger.info(f"Exécution du step: {step.step_type} {step.name}")
 
+
 def after_step(context, step):
     if step.status == "passed":
         step_logger.info(f"✓ Step réussi: {step.step_type} {step.name}")
+
     elif step.status == "failed":
         step_logger.error(f"✗ Step échoué: {step.step_type} {step.name}")
+
+        # ── Capture du step en échec ──────────────────────────────────────
+        # Stocké dans context pour être utilisé dans after_scenario
+        error_message = ""
+        if step.exception:
+            error_message = str(step.exception)
+
+        context.failed_step = {
+            "step_type": step.step_type,   # given / when / then
+            "step_name": step.name,
+            "error":     error_message,
+        }
+
     else:
         step_logger.warning(f"? Step status: {step.status} - {step.step_type} {step.name}")
 
+
 def after_scenario(context, scenario):
     if hasattr(context, "browser"):
+
         if scenario.status == "failed":
             step_logger.error(f"Scénario échoué: {scenario.name}")
 
-            # ✅ Screenshot attaché directement au rapport Allure
+            # ── Screenshot ────────────────────────────────────────────────
             allure.attach(
                 context.browser.get_screenshot_as_png(),
                 name="screenshot",
                 attachment_type=allure.attachment_type.PNG
             )
 
-            # Sauvegarde également en fichier local (uploadé par la CI)
             os.makedirs("screenshots", exist_ok=True)
-            name = scenario.name.replace(" ", "_")
-            screenshot_path = f"screenshots/{name}.png"
+            safe_name       = scenario.name.replace(" ", "_").replace("/", "-")
+            screenshot_path = f"screenshots/{safe_name}.png"
             context.browser.save_screenshot(screenshot_path)
-            step_logger.info(f"Screenshot sauvegardé: {screenshot_path}")
+            step_logger.info(f"Screenshot sauvegardé : {screenshot_path}")
+
+            # ── Rapport JSON pour le workflow CI / Jira ───────────────────
+            # Extrait le username depuis le nom du scénario (suffixe "— <username>")
+            # Exemple : "TC-CAT-36 - Tri par nom — problem_user"
+            username = "inconnu"
+            if " — " in scenario.name:
+                username = scenario.name.split(" — ")[-1].strip()
+
+            # Extrait les tags du scénario (ex: ["tc-cat-36", "web", "sort"])
+            tags = list(scenario.effective_tags)
+
+            failure_report = {
+                "scenario":        scenario.name,
+                "username":        username,
+                "tags":            tags,
+                "feature":         scenario.feature.filename,
+                "failed_step":     context.failed_step,
+                "screenshot_path": screenshot_path,
+            }
+
+            # Un fichier par scénario échoué → un ticket Jira par échec
+            report_path = f"reports/failures/{safe_name}.json"
+            with open(report_path, "w", encoding="utf-8") as f:
+                json.dump(failure_report, f, ensure_ascii=False, indent=2)
+
+            step_logger.info(f"Rapport d'échec écrit : {report_path}")
+
         else:
             step_logger.info(f"Scénario réussi: {scenario.name}")
 
         step_logger.info("Fermeture du navigateur")
         context.browser.quit()
+
 
 def after_all(context):
     print("Fin des tests")
