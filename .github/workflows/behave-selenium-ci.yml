@@ -132,64 +132,100 @@ jobs:
         if: steps.check.outputs.count > 0
         run: |
           python3 - <<'EOF'
-          import glob, json, base64, urllib.request, os
+          import glob, json, base64, urllib.request
 
           reports = sorted(glob.glob("reports/failures/*.json"))
 
-          # ── Construction des blocs de détail par scénario ────────────────
-          blocs = []
+          def adf_text(text):
+              """Noeud texte ADF simple."""
+              return {"type": "text", "text": str(text)}
+
+          def adf_paragraph(*texts):
+              """Paragraphe ADF avec un ou plusieurs noeuds texte."""
+              return {"type": "paragraph", "content": list(texts)}
+
+          def adf_code_block(code):
+              """Bloc de code ADF."""
+              return {
+                  "type": "codeBlock",
+                  "attrs": {"language": "text"},
+                  "content": [adf_text(code)]
+              }
+
+          def adf_heading(text, level=3):
+              """Titre ADF."""
+              return {
+                  "type": "heading",
+                  "attrs": {"level": level},
+                  "content": [adf_text(text)]
+              }
+
+          def adf_rule():
+              """Séparateur horizontal ADF."""
+              return {"type": "rule"}
+
+          def adf_bullet_list(items):
+              """Liste à puces ADF."""
+              return {
+                  "type": "bulletList",
+                  "content": [
+                      {"type": "listItem", "content": [adf_paragraph(adf_text(item))]}
+                      for item in items
+                  ]
+              }
+
+          # ── Construction du document ADF ─────────────────────────────────
+          count      = len(reports)
+          workflow   = "${{ github.workflow }}"
+          branch     = "${{ github.ref_name }}"
+          commit     = "${{ github.sha }}"
+          actor      = "${{ github.actor }}"
+          allure_url = "https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/"
+
+          content_nodes = [
+              adf_paragraph(adf_text(f"{count} scenario(s) en echec lors du run automatique.")),
+              adf_heading("Contexte technique", 3),
+              adf_bullet_list([
+                  f"Workflow : {workflow}",
+                  f"Branche  : {branch}",
+                  f"Commit   : {commit}",
+                  f"Declencheur : {actor}",
+                  f"Rapport Allure : {allure_url}",
+              ]),
+              adf_heading("Detail des echecs", 3),
+          ]
+
           for path in reports:
               with open(path, encoding="utf-8") as f:
                   r = json.load(f)
+              step = r.get("failed_step") or {}
 
-              step     = r.get("failed_step") or {}
-              bloc = (
-                  f"h4. {r['scenario']}\n"
-                  f"*Utilisateur* : {r['username']} | "
-                  f"*Tags* : {', '.join(r['tags'])}\n\n"
-                  f"*Étape en échec* :\n"
-                  f"{{code}}\n"
-                  f"{step.get('step_type','')} {step.get('step_name','')}\n"
-                  f"{{code}}\n\n"
-                  f"*Erreur* :\n"
-                  f"{{code}}\n"
-                  f"{step.get('error', 'N/A')}\n"
-                  f"{{code}}\n\n"
-                  f"*Screenshot* : {r['screenshot_path']} (voir artefacts du run)\n"
-                  f"----"
-              )
-              blocs.append(bloc)
+              content_nodes += [
+                  adf_heading(r["scenario"], 4),
+                  adf_bullet_list([
+                      f"Utilisateur : {r['username']}",
+                      f"Tags        : {', '.join(r['tags'])}",
+                      f"Screenshot  : {r['screenshot_path']} (voir artefacts du run)",
+                  ]),
+                  adf_paragraph(adf_text("Etape en echec :")),
+                  adf_code_block(f"{step.get('step_type','')} {step.get('step_name','')}"),
+                  adf_paragraph(adf_text("Message d'erreur :")),
+                  adf_code_block(step.get("error", "N/A")),
+                  adf_rule(),
+              ]
 
-          # ── Assemblage de la description complète ────────────────────────
-          count       = len(reports)
-          workflow    = "${{ github.workflow }}"
-          branch      = "${{ github.ref_name }}"
-          commit      = "${{ github.sha }}"
-          actor       = "${{ github.actor }}"
-          allure_url  = "https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/"
+          description_adf = {"type": "doc", "version": 1, "content": content_nodes}
 
-          description = (
-              f"*{count} scénario(s) en échec détecté(s) lors du run automatique.*\n\n"
-              f"*Contexte technique* :\n"
-              f"- *Workflow* : {workflow}\n"
-              f"- *Branche* : {branch}\n"
-              f"- *Commit* : {commit}\n"
-              f"- *Déclenché par* : {actor}\n"
-              f"- *Rapport Allure* : {allure_url}\n\n"
-              f"h3. Détail des échecs\n\n"
-              + "\n\n".join(blocs)
-          )
+          summary = f"[BUG] {count} scenario(s) en echec - {branch} ({commit[:7]})"
 
-          summary = f"[BUG] {count} scénario(s) en échec — {branch} ({commit[:7]})"
-
-          # ── Appel API Jira ────────────────────────────────────────────────
+          # ── Appel API Jira REST v3 ────────────────────────────────────────
           payload = json.dumps({
               "fields": {
                   "project":     {"key": "PSD"},
                   "issuetype":   {"name": "Bug"},
                   "priority":    {"name": "Medium"},
                   "summary":     summary,
-                  "description": description,
+                  "description": description_adf,
               }
           }).encode("utf-8")
 
@@ -210,7 +246,7 @@ jobs:
 
           with urllib.request.urlopen(req) as resp:
               result = json.load(resp)
-              print(f"✅ Ticket créé : {result.get('key')} — {summary}")
+              print(f"Ticket cree : {result.get('key')} - {summary}")
           EOF
 
   # ── Job séparé : rapport Allure + GitHub Pages ────────────────────────────
