@@ -108,23 +108,15 @@ jobs:
           path: reports/results/
           retention-days: 7
 
-  # ── Job séparé : création des tickets Jira ────────────────────────────────
-  jira:
-    name: Tickets Jira par échec
+  # ── Job : mise à jour des matrices d'exécution sur les tickets Jira ────────
+  matrix:
+    name: Matrices d'exécution Jira
     runs-on: ubuntu-latest
     needs: test
     if: always()
 
     steps:
-      # ── 10. Récupération des rapports d'échec JSON ───────────────────────
-      - name: Télécharger les rapports d'échec
-        uses: actions/download-artifact@v4
-        continue-on-error: true
-        with:
-          name: failure-reports
-          path: reports/failures/
-
-      # ── 10b. Récupération des résultats complets pour la matrice ─────────
+      # ── 10. Récupération des résultats complets (pass + fail) ─────────────
       - name: Télécharger les résultats complets
         uses: actions/download-artifact@v4
         continue-on-error: true
@@ -132,30 +124,20 @@ jobs:
           name: test-results
           path: reports/results/
 
-      # ── 11. Vérifier s'il y a des échecs ─────────────────────────────────
-      - name: Vérifier la présence d'échecs
-        id: check
-        run: |
-          COUNT=$(find reports/failures -name "*.json" 2>/dev/null | wc -l)
-          echo "count=$COUNT" >> $GITHUB_OUTPUT
-          echo "$COUNT scénario(s) en échec détecté(s)"
-
-      # ── 13. Mettre à jour la matrice d'exécution sur chaque ticket Jira ──
-      # - Regroupe les résultats par tag tc-cat-XX
-      # - Construit la matrice utilisateurs x étapes
-      # - Met à jour customfield_10104 sur le ticket Jira correspondant
+      # ── 11. Mise à jour de la matrice sur chaque ticket de cas de test ────
+      # Pour chaque tc-tag avec un @PSD-XX, construit la matrice et met à jour
+      # le champ customfield_10104 du ticket Jira correspondant.
       - name: Mettre à jour les matrices d'exécution Jira
-        if: always()
         run: |
           python3 - <<'EOF'
           import glob, json, base64, urllib.request
           from datetime import datetime
           from collections import defaultdict
 
-          CUSTOM_FIELD  = "customfield_10104"
-          JIRA_BASE     = "${{ secrets.JIRA_BASE_URL }}"
-          ACTOR         = "${{ github.actor }}"
-          RUN_DATE      = datetime.utcnow().strftime("%d/%m/%Y")
+          CUSTOM_FIELD = "customfield_10104"
+          JIRA_BASE    = "${{ secrets.JIRA_BASE_URL }}"
+          ACTOR        = "${{ github.actor }}"
+          RUN_DATE     = datetime.utcnow().strftime("%d/%m/%Y")
 
           credentials = base64.b64encode(
               f"${{ secrets.JIRA_USER_EMAIL }}:${{ secrets.JIRA_API_TOKEN }}"
@@ -165,11 +147,6 @@ jobs:
               "Authorization": f"Basic {credentials}",
               "Content-Type":  "application/json",
           }
-
-          def jira_get(path):
-              req = urllib.request.Request(f"{JIRA_BASE}{path}", headers=headers)
-              with urllib.request.urlopen(req) as r:
-                  return json.load(r)
 
           def jira_put(path, payload):
               req = urllib.request.Request(
@@ -182,7 +159,6 @@ jobs:
                   return r.status
 
           # ── 1. Charge tous les résultats (pass + fail) ───────────────────
-          # Structure : { "tc-cat-36": { "standard_user": {"steps": [...], "status": "PASS"} } }
           results = defaultdict(dict)
 
           for path in glob.glob("reports/results/*.json"):
@@ -193,21 +169,22 @@ jobs:
                       results[tag][r["username"]] = {
                           "steps":  r.get("steps", []),
                           "status": r.get("status", "PASS"),
+                          "tags":   r.get("tags", []),
                       }
 
           if not results:
-              print("Aucun résultat trouvé dans reports/results/")
+              print("Aucun résultat trouvé dans reports/results/ — job ignoré")
               exit(0)
 
-          # ── 2. Pour chaque ticket, construit et pousse la matrice ─────────
+          # ── 2. Pour chaque cas de test, construit et pousse la matrice ───
           ALL_USERS = [
               "standard_user", "problem_user", "locked_out_user",
               "visual_user", "performance_glitch_user", "error_user",
           ]
 
           for tc_tag, user_data in sorted(results.items()):
-              # Récupère la clé Jira depuis le tag @PSD-XX du scénario
-              # Ex: tags = ["tc-cat-36", "PSD-42", "web", "sort"]
+
+              # Récupère la clé Jira depuis le tag @PSD-XX
               first_result = next(iter(user_data.values()))
               issue_key = next(
                   (t for t in first_result.get("tags", []) if t.upper().startswith("PSD-")),
@@ -218,18 +195,13 @@ jobs:
                   continue
               issue_key = issue_key.upper()
 
-              # Récupère les étapes depuis le premier user disponible
-              first      = next(iter(user_data.values()))
-              steps      = first["steps"]
+              steps         = first_result["steps"]
               users_present = list(user_data.keys())
 
               # ── Construit le texte de la matrice ─────────────────────────
-              header_users = " | ".join(
-                  u if u in users_present else f"~~{u}~~"
-                  for u in ALL_USERS
-              )
-              header = f"| Étapes du Test (Gherkin) | {header_users} |"
-              separator = "|---|" + "---|" * len(ALL_USERS)
+              header_users = " | ".join(ALL_USERS)
+              header       = f"| Étapes du Test (Gherkin) | {header_users} |"
+              separator    = "|---|" + "---|" * len(ALL_USERS)
 
               rows = []
               for i, step in enumerate(steps, 1):
@@ -240,8 +212,7 @@ jobs:
                       elif user_data[u]["status"] == "PASS":
                           cells.append("✅")
                       else:
-                          step_status = user_data[u].get("steps", [{}]*i)[i-1] if i <= len(user_data[u].get("steps",[])) else {}
-                          cells.append("❌" if step_status.get("failed") else "✅")
+                          cells.append("❌")
                   rows.append(f"| {i}. {step} | " + " | ".join(cells) + " |")
 
               # Ligne résultat final
@@ -251,7 +222,7 @@ jobs:
                       final_cells.append(" - ")
                   else:
                       final_cells.append("PASS" if user_data[u]["status"] == "PASS" else "FAIL")
-              final_row = "| **RÉSULTAT FINAL** | " + " | ".join(final_cells) + " |"
+              final_row = f"| RÉSULTAT FINAL | " + " | ".join(final_cells) + " |"
 
               matrix_text = (
                   f"Date de campagne : {RUN_DATE}\n\n"
@@ -261,7 +232,6 @@ jobs:
                   f"Exécuté par : {ACTOR}"
               )
 
-              # ── Pousse vers Jira en ADF ───────────────────────────────────
               adf_value = {
                   "type": "doc", "version": 1,
                   "content": [{
@@ -274,14 +244,186 @@ jobs:
                   f"/rest/api/3/issue/{issue_key}",
                   {"fields": {CUSTOM_FIELD: adf_value}}
               )
-              print(f"{'✅' if status == 204 else '❌'} {issue_key} — matrice mise à jour (HTTP {status})")
+              print(f"{'✅' if status == 204 else '❌'} {issue_key} ({tc_tag}) — matrice mise à jour (HTTP {status})")
+          EOF
+
+  # ── Job : création du ticket de bug récapitulatif ─────────────────────────
+  jira:
+    name: Ticket de bug Jira
+    runs-on: ubuntu-latest
+    needs: matrix
+    if: always()
+
+    steps:
+      # ── 12. Récupération des rapports d'échec JSON ───────────────────────
+      - name: Télécharger les rapports d'échec
+        uses: actions/download-artifact@v4
+        continue-on-error: true
+        with:
+          name: failure-reports
+          path: reports/failures/
+
+      # ── 13. Vérifier s'il y a des échecs ─────────────────────────────────
+      - name: Vérifier la présence d'échecs
+        id: check
+        run: |
+          COUNT=$(find reports/failures -name "*.json" 2>/dev/null | wc -l)
+          echo "count=$COUNT" >> $GITHUB_OUTPUT
+          echo "$COUNT scénario(s) en échec détecté(s)"
+
+      # ── 14. Créer le ticket récapitulatif unique ──────────────────────────
+      - name: Créer le ticket récapitulatif Jira
+        if: steps.check.outputs.count > 0
+        run: |
+          python3 - <<'EOF'
+          import glob, json, base64, urllib.request
+
+          reports = sorted(glob.glob("reports/failures/*.json"))
+
+          def adf_text(text):
+              return {"type": "text", "text": str(text)}
+
+          def adf_paragraph(*texts):
+              return {"type": "paragraph", "content": list(texts)}
+
+          def adf_code_block(code):
+              return {
+                  "type": "codeBlock",
+                  "attrs": {"language": "text"},
+                  "content": [adf_text(code)]
+              }
+
+          def adf_heading(text, level=3):
+              return {
+                  "type": "heading",
+                  "attrs": {"level": level},
+                  "content": [adf_text(text)]
+              }
+
+          def adf_rule():
+              return {"type": "rule"}
+
+          def adf_bullet_list(items):
+              return {
+                  "type": "bulletList",
+                  "content": [
+                      {"type": "listItem", "content": [adf_paragraph(adf_text(item))]}
+                      for item in items
+                  ]
+              }
+
+          count      = len(reports)
+          workflow   = "${{ github.workflow }}"
+          branch     = "${{ github.ref_name }}"
+          commit     = "${{ github.sha }}"
+          actor      = "${{ github.actor }}"
+          allure_url = "https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/"
+
+          content_nodes = [
+              adf_paragraph(adf_text(f"{count} scenario(s) en echec lors du run automatique.")),
+              adf_heading("Contexte technique", 3),
+              adf_bullet_list([
+                  f"Workflow : {workflow}",
+                  f"Branche  : {branch}",
+                  f"Commit   : {commit}",
+                  f"Declencheur : {actor}",
+                  f"Rapport Allure : {allure_url}",
+              ]),
+              adf_heading("Detail des echecs", 3),
+          ]
+
+          for path in reports:
+              with open(path, encoding="utf-8") as f:
+                  r = json.load(f)
+              step = r.get("failed_step") or {}
+
+              content_nodes += [
+                  adf_heading(r["scenario"], 4),
+                  adf_bullet_list([
+                      f"Utilisateur : {r['username']}",
+                      f"Tags        : {', '.join(r['tags'])}",
+                      f"Screenshot  : {r['screenshot_path']} (voir artefacts du run)",
+                  ]),
+                  adf_paragraph(adf_text("Etape en echec :")),
+                  adf_code_block(f"{step.get('step_type','')} {step.get('step_name','')}"),
+                  adf_paragraph(adf_text("Message d'erreur :")),
+                  adf_code_block(step.get("error", "N/A")),
+                  adf_rule(),
+              ]
+
+          description_adf = {"type": "doc", "version": 1, "content": content_nodes}
+          summary = f"[BUG] {count} scenario(s) en echec - {branch} ({commit[:7]})"
+
+          payload = json.dumps({
+              "fields": {
+                  "project":     {"key": "PSD"},
+                  "issuetype":   {"name": "Bug"},
+                  "priority":    {"name": "Medium"},
+                  "summary":     summary,
+                  "description": description_adf,
+              }
+          }).encode("utf-8")
+
+          credentials = base64.b64encode(
+              f"${{ secrets.JIRA_USER_EMAIL }}:${{ secrets.JIRA_API_TOKEN }}"
+              .encode()
+          ).decode()
+
+          req = urllib.request.Request(
+              "${{ secrets.JIRA_BASE_URL }}/rest/api/3/issue",
+              data=payload,
+              headers={
+                  "Authorization": f"Basic {credentials}",
+                  "Content-Type":  "application/json",
+              },
+              method="POST",
+          )
+
+          with urllib.request.urlopen(req) as resp:
+              result = json.load(resp)
+              issue_key = result.get("key")
+              print(f"Ticket cree : {issue_key} - {summary}")
+
+          # ── Transition vers "To Do" ───────────────────────────────────────
+          trans_req = urllib.request.Request(
+              f"${{ secrets.JIRA_BASE_URL }}/rest/api/3/issue/{issue_key}/transitions",
+              headers={
+                  "Authorization": f"Basic {credentials}",
+                  "Content-Type":  "application/json",
+              },
+              method="GET",
+          )
+          with urllib.request.urlopen(trans_req) as resp:
+              transitions = json.load(resp)["transitions"]
+
+          todo_id = next(
+              (t["id"] for t in transitions if t["name"].lower() in ("to do", "à faire")),
+              None
+          )
+
+          if todo_id:
+              trans_payload = json.dumps({"transition": {"id": todo_id}}).encode("utf-8")
+              move_req = urllib.request.Request(
+                  f"${{ secrets.JIRA_BASE_URL }}/rest/api/3/issue/{issue_key}/transitions",
+                  data=trans_payload,
+                  headers={
+                      "Authorization": f"Basic {credentials}",
+                      "Content-Type":  "application/json",
+                  },
+                  method="POST",
+              )
+              with urllib.request.urlopen(move_req) as resp:
+                  print(f"Ticket {issue_key} deplace en To Do")
+          else:
+              print(f"Transition To Do introuvable — ticket {issue_key} laisse en Backlog")
+              print(f"Transitions disponibles : {[t['name'] for t in transitions]}")
           EOF
 
   # ── Job séparé : rapport Allure + GitHub Pages ────────────────────────────
   report:
     name: Rapport Allure + GitHub Pages
     runs-on: ubuntu-latest
-    needs: test
+    needs: jira
     if: always()
     permissions:
       contents: write
