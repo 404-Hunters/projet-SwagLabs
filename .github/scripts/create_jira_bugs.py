@@ -21,6 +21,7 @@ import glob
 import json
 import base64
 import urllib.request
+import urllib.parse
 import urllib.error
 import os
 from datetime import datetime, timezone
@@ -137,7 +138,65 @@ def adf_info_table(data):
     }
 
 
+def adf_data_table(table_data):
+    """
+    Crée un tableau ADF à partir des données d'une data table Gherkin.
+    
+    Args:
+        table_data: Liste de listes représentant les lignes du tableau (avec header en première ligne)
+        
+    Returns:
+        Dictionnaire ADF représentant un tableau
+    """
+    if not table_data or len(table_data) < 1:
+        return None
+    
+    rows = []
+    for i, row in enumerate(table_data):
+        is_header = (i == 0)  # Première ligne = header
+        cells = [adf_table_cell(cell, is_header=is_header) for cell in row]
+        rows.append(adf_table_row(cells))
+    
+    return {
+        "type": "table",
+        "attrs": {"isNumberColumnEnabled": False, "layout": "default"},
+        "content": rows
+    }
+
+
 # ── Appels API Jira ─────────────────────────────────────────────────────────
+def ticket_exists(bug_id):
+    """
+    Vérifie si un ticket de bug existe déjà dans Jira.
+    
+    Args:
+        bug_id: L'identifiant du bug (ex: "BUG-CART-01-standard_user")
+        
+    Returns:
+        La clé du ticket s'il existe, None sinon
+    """
+    # Recherche JQL pour trouver un ticket avec ce bug_id dans le summary
+    jql = f'project = PSD AND issuetype = Bug AND summary ~ "{bug_id}"'
+    params = urllib.parse.urlencode({"jql": jql, "fields": "key,summary"})
+    
+    req = urllib.request.Request(
+        f"{JIRA_BASE}/rest/api/3/search?{params}",
+        headers=headers,
+        method="GET",
+    )
+    
+    try:
+        with urllib.request.urlopen(req) as resp:
+            result = json.load(resp)
+            issues = result.get("issues", [])
+            if issues:
+                return issues[0]["key"]
+    except Exception as e:
+        print(f"  ⚠️  Erreur lors de la vérification d'existence : {e}")
+    
+    return None
+
+
 def create_ticket(summary, description_adf):
     """
     Crée un ticket de bug dans Jira.
@@ -280,6 +339,7 @@ def build_bug_description(r, bug_id, scenario, module, username, step, screensho
     # ── Résultat attendu ────────────────────────────────────────────────────
     then_steps = [s for s in r.get("steps", []) if s.startswith("then")]
     expected = then_steps[-1].replace("then ", "") if then_steps else "Voir le scénario Gherkin"
+    expected_content = [adf_code_block(expected)]
     
     # ── Résultat obtenu ─────────────────────────────────────────────────────
     obtained = step.get("error", "N/A")
@@ -335,7 +395,7 @@ def build_bug_description(r, bug_id, scenario, module, username, step, screensho
 
             # ── Résultat attendu ────────────────────────────────────────────
             adf_heading("Resultat attendu", 3),
-            adf_paragraph(adf_text(expected)),
+        ] + expected_content + [
 
             # ── Impact ──────────────────────────────────────────────────────
             adf_heading("Impact", 3),
@@ -397,6 +457,12 @@ def process_failure_reports():
 
         module = determine_module(tc_tag)
         summary = f"[BUG] {bug_id}"
+
+        # ── Vérifier si le ticket existe déjà ───────────────────────────────
+        existing_key = ticket_exists(bug_id)
+        if existing_key:
+            print(f"⏭️  {existing_key} — {summary} (ticket déjà existant, ignoré)")
+            continue
 
         # ── Construction de la description ──────────────────────────────────
         description_adf = build_bug_description(

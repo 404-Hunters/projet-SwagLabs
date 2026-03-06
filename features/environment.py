@@ -157,6 +157,13 @@ def after_scenario(context, scenario):
                 "feature":         scenario.feature.filename,
                 "failed_step":     context.failed_step,
                 "screenshot_path": screenshot_path,
+                "steps":           [
+                    {
+                        "text": f"{s.step_type} {s.name}",
+                        "table": [[str(cell) for cell in row] for row in s.table] if s.table else None
+                    }
+                    for s in scenario.steps
+                ],
             }
             report_path = f"reports/failures/{safe_name}.json"
             with open(report_path, "w", encoding="utf-8") as f:
@@ -180,7 +187,10 @@ def after_scenario(context, scenario):
                 "tags":     list(scenario.effective_tags),
                 "status":   "PASS" if scenario.status == "passed" else "FAIL",
                 "steps":    [
-                    f"{s.step_type} {s.name}"
+                    {
+                        "text": f"{s.step_type} {s.name}",
+                        "table": [[str(cell) for cell in row] for row in s.table] if s.table else None
+                    }
                     for s in scenario.steps
                 ],
             }
