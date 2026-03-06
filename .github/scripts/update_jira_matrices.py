@@ -88,6 +88,41 @@ def adf_row(cells):
     """
     return {"type": "tableRow", "content": cells}
 
+def format_step_text(step):
+    """
+    Formate le texte d'une étape de test.
+    Si l'étape contient un tableau, ajoute les éléments séparés par des virgules.
+    
+    Args:
+        step: String simple ou dict avec 'text' et optionnellement 'table'
+        
+    Returns:
+        String formatée pour l'affichage
+    """
+    # Cas simple : step est déjà une string
+    if isinstance(step, str):
+        return step
+    
+    # Cas dict : extraire le texte et éventuellement le tableau
+    if isinstance(step, dict):
+        step_text = step.get("text", "")
+        table_data = step.get("table")
+        
+        # Si un tableau est présent, ajouter les éléments séparés par des virgules
+        if table_data and isinstance(table_data, list):
+            # Aplatir toutes les lignes du tableau en une seule liste d'éléments
+            all_items = []
+            for row in table_data:
+                if isinstance(row, list):
+                    all_items.extend(str(cell) for cell in row)
+            
+            if all_items:
+                step_text += " : " + ", ".join(all_items)
+        
+        return step_text
+    
+    # Fallback : convertir en string
+    return str(step)
 
 # ── API Jira ────────────────────────────────────────────────────────────────
 def jira_put(path, payload):
@@ -163,7 +198,9 @@ def build_matrix_adf(tc_tag, user_data):
     # ── Lignes des étapes ───────────────────────────────────────────────────
     step_rows = []
     for i, step in enumerate(steps, 1):
-        cells = [adf_cell(f"{i}. {step}")]
+        # Formater l'étape (gère les tableaux s'ils sont présents)
+        step_text = format_step_text(step)
+        cells = [adf_cell(f"{i}. {step_text}")]
         for u in ALL_USERS:
             if u not in user_data:
                 cells.append(adf_cell("-"))

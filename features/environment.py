@@ -189,7 +189,7 @@ def after_scenario(context, scenario):
                 "steps":    [
                     {
                         "text": f"{s.step_type} {s.name}",
-                        "table": [[str(cell) for cell in row] for row in s.table] if s.table else None
+                        "table": [list(row) for row in s.table] if s.table else None
                     }
                     for s in scenario.steps
                 ],

@@ -138,6 +138,29 @@ def adf_info_table(data):
     }
 
 
+def table_to_text(table_data):
+    """
+    Convertit un tableau Gherkin en texte formaté pour l'affichage dans un paragraph.
+    
+    Args:
+        table_data: Liste de listes représentant les lignes du tableau
+        
+    Returns:
+        Chaîne de texte formatée avec les données du tableau
+    """
+    if not table_data or not isinstance(table_data, list):
+        return ""
+    
+    lines = []
+    for row in table_data:
+        if isinstance(row, list):
+            # Convertir toutes les cellules en string et joindre avec " | "
+            row_str = " | ".join(str(cell) for cell in row)
+            lines.append(row_str)
+    
+    return "\n".join(lines) if lines else ""
+
+
 def adf_data_table(table_data):
     """
     Crée un tableau ADF à partir des données d'une data table Gherkin.
@@ -146,16 +169,28 @@ def adf_data_table(table_data):
         table_data: Liste de listes représentant les lignes du tableau (avec header en première ligne)
         
     Returns:
-        Dictionnaire ADF représentant un tableau
+        Dictionnaire ADF représentant un tableau, ou None si invalide
     """
     if not table_data or len(table_data) < 1:
         return None
     
+    # Validation : vérifier que c'est bien une liste de listes
+    if not isinstance(table_data, list):
+        print(f"  ⚠️  table_data n'est pas une liste: {type(table_data)}")
+        return None
+    
     rows = []
     for i, row in enumerate(table_data):
+        if not isinstance(row, list):
+            print(f"  ⚠️  Ligne {i} n'est pas une liste: {type(row)}")
+            continue
+            
         is_header = (i == 0)  # Première ligne = header
-        cells = [adf_table_cell(cell, is_header=is_header) for cell in row]
+        cells = [adf_table_cell(str(cell), is_header=is_header) for cell in row]
         rows.append(adf_table_row(cells))
+    
+    if not rows:
+        return None
     
     return {
         "type": "table",
@@ -216,6 +251,10 @@ def create_ticket(summary, description_adf):
     }
 
     payload = json.dumps({"fields": fields}).encode("utf-8")
+    
+    # Debug: afficher le payload en cas d'erreur
+    # print(f"DEBUG Payload: {json.dumps(description_adf, indent=2)}")
+    
     req = urllib.request.Request(
         f"{JIRA_BASE}/rest/api/3/issue",
         data=payload,
@@ -228,6 +267,9 @@ def create_ticket(summary, description_adf):
     except urllib.error.HTTPError as e:
         error_body = e.read().decode("utf-8")
         print(f"HTTP {e.code} — Reponse Jira : {error_body}")
+        # Debug: afficher la description ADF en cas d'erreur
+        print(f"DEBUG Description ADF qui a échoué:")
+        print(json.dumps(description_adf, indent=2))
         raise
 
 
@@ -337,26 +379,56 @@ def build_bug_description(r, bug_id, scenario, module, username, step, screensho
     run_date = datetime.now(timezone.utc).strftime("%d/%m/%Y")
     
     # ── Résultat attendu ────────────────────────────────────────────────────
-    then_steps = [s for s in r.get("steps", []) if s.startswith("then")]
-    expected = then_steps[-1].replace("then ", "") if then_steps else "Voir le scénario Gherkin"
-    expected_content = [adf_code_block(expected)]
+    steps_data = r.get("steps", [])
+    then_steps = [
+        s for s in steps_data 
+        if isinstance(s, dict) and s.get("text", "").startswith("then")
+    ]
+    
+    expected_content = []
+    if then_steps:
+        last_then = then_steps[-1]
+        expected_text = last_then.get("text", "").replace("then ", "")
+        
+        # Ajouter le tableau en texte brut si présent
+        if last_then.get("table"):
+            table_text = table_to_text(last_then["table"])
+            if table_text:
+                expected_text += "\n" + table_text
+        
+        expected_content.append(adf_paragraph(adf_text(expected_text)))
+    
+    # S'assurer qu'on a toujours au moins un élément
+    if not expected_content:
+        expected_content.append(adf_paragraph(adf_text("Voir le scénario Gherkin")))
     
     # ── Résultat obtenu ─────────────────────────────────────────────────────
     obtained = step.get("error", "N/A")
     
     # ── Étapes de reproduction ──────────────────────────────────────────────
-    steps_list = r.get("steps", [])
-    steps_block = (
-        {
+    if steps_data:
+        step_items = []
+        for s in steps_data:
+            if isinstance(s, dict):
+                step_text = s.get("text", "")
+                
+                # Ajouter le tableau en texte préformaté si présent
+                if s.get("table"):
+                    table_text = table_to_text(s["table"])
+                    if table_text:
+                        step_text += "\n" + table_text
+                
+                step_items.append({"type": "listItem", "content": [adf_paragraph(adf_text(step_text))]})
+            else:
+                # Rétro-compatibilité : si c'est une string simple
+                step_items.append({"type": "listItem", "content": [adf_paragraph(adf_text(str(s)))]})
+        
+        steps_block = {
             "type": "orderedList",
-            "content": [
-                {"type": "listItem", "content": [adf_paragraph(adf_text(s))]}
-                for s in steps_list
-            ]
+            "content": step_items
         }
-        if steps_list
-        else adf_paragraph(adf_text("Aucune étape disponible."))
-    )
+    else:
+        steps_block = adf_paragraph(adf_text("Aucune étape disponible."))
     
     # ── Description ADF ─────────────────────────────────────────────────────
     return {
