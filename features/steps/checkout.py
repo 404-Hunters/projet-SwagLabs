@@ -1,9 +1,7 @@
 from behave import given, when, then
-from selenium.webdriver.common.by import By
-from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
-from support.helpers import find_element, wait_for_element, wait_for_element_visible, wait_for_elements, click_element, send_keys_to_element, wait_for_url_contains, login, wait_for_element_clickable, localiser_produit_par_nom, localiser_cta_produit, wait_for_text_in_element
-from support.locators import CartPageLocators, CheckoutPageLocators
+from support.helpers import wait_for_element_visible, click_element, send_keys_to_element, wait_for_url_contains, localiser_produit_par_nom, localiser_cta_produit
+from support.locators import CheckoutPageLocators
 
 @when('l\'utilisateur clique sur le bouton "{button_name}" de la page Checkout {page_name}')
 def step_click_button_checkout(context, button_name, page_name):
@@ -84,3 +82,20 @@ def step_verification_total_commande(context, expected_total):
         f"Sous-total attendu : '{expected_total}', affiché : '{actual_total}'"
     )
         
+@then('le montant de la taxe affiche "{expected_tax}"')
+def step_verification_montant_taxe(context, expected_tax):
+    element = wait_for_element_visible(context.browser, CheckoutPageLocators.TAX_AMOUNT)
+    assert element is not None, f"L'élément taxe est introuvable"
+    actual_tax = element.text.strip()
+    assert expected_tax in actual_tax, (
+        f"Taxe attendue : '{expected_tax.strip()}', affichée : '{actual_tax}'"
+    )
+
+@then('le total de la commande avec taxe affiche "{expected_total_with_tax}"')
+def step_verification_total_commande_avec_taxe(context, expected_total_with_tax):
+    element = wait_for_element_visible(context.browser, CheckoutPageLocators.TOTAL_PRICE)
+    assert element is not None, f"L'élément total avec taxe est introuvable"
+    actual_total_with_tax = element.text.strip()
+    assert expected_total_with_tax in actual_total_with_tax, (
+        f"Total avec taxe attendu : '{expected_total_with_tax.strip()}', affiché : '{actual_total_with_tax}'"
+    )

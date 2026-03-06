@@ -2,7 +2,7 @@ from behave import given, when, then
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
-from support.helpers import find_element, wait_for_element, wait_for_element_visible, wait_for_elements, wait_for_element_clickable, click_element, send_keys_to_element, wait_for_url_contains, login
+from support.helpers import wait_for_element_visible, wait_for_element_clickable, wait_for_url_contains
 from support.locators import ProductPageLocators
 
 # Scenario: TC-CAT-35 - Accès détail produit via le nom
