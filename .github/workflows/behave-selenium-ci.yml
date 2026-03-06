@@ -109,6 +109,7 @@ jobs:
 
     steps:
       # ── 10. Récupération des rapports d'échec JSON ───────────────────────
+      # continue-on-error : si aucun test n'a échoué, l'artefact n'existe pas
       - name: Télécharger les rapports d'échec
         uses: actions/download-artifact@v4
         continue-on-error: true
@@ -123,15 +124,6 @@ jobs:
           COUNT=$(find reports/failures -name "*.json" 2>/dev/null | wc -l)
           echo "count=$COUNT" >> $GITHUB_OUTPUT
           echo "$COUNT scénario(s) en échec détecté(s)"
-
-      # ── 12. Connexion à Jira ─────────────────────────────────────────────
-      - name: Connexion à Jira
-        if: steps.check.outputs.count > 0
-        uses: atlassian/gajira-login@v3
-        with:
-          host: ${{ secrets.JIRA_BASE_URL }}
-          user-email: ${{ secrets.JIRA_USER_EMAIL }}
-          api-token: ${{ secrets.JIRA_API_TOKEN }}
 
       # ── 13. Créer un ticket récapitulatif unique ─────────────────────────
       # Lit tous les JSONs d'échec, construit une description avec un bloc
