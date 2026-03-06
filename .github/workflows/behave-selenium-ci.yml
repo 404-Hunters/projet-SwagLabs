@@ -246,7 +246,45 @@ jobs:
 
           with urllib.request.urlopen(req) as resp:
               result = json.load(resp)
-              print(f"Ticket cree : {result.get('key')} - {summary}")
+              issue_key = result.get("key")
+              print(f"Ticket cree : {issue_key} - {summary}")
+
+          # ── Transition vers "To Do" ───────────────────────────────────────
+          # 1. Récupère la liste des transitions disponibles pour ce ticket
+          trans_req = urllib.request.Request(
+              f"${{ secrets.JIRA_BASE_URL }}/rest/api/3/issue/{issue_key}/transitions",
+              headers={
+                  "Authorization": f"Basic {credentials}",
+                  "Content-Type":  "application/json",
+              },
+              method="GET",
+          )
+          with urllib.request.urlopen(trans_req) as resp:
+              transitions = json.load(resp)["transitions"]
+
+          # 2. Cherche la transition "To Do" (insensible à la casse)
+          todo_id = next(
+              (t["id"] for t in transitions if t["name"].lower() in ("to do", "à faire")),
+              None
+          )
+
+          # 3. Applique la transition si trouvée
+          if todo_id:
+              trans_payload = json.dumps({"transition": {"id": todo_id}}).encode("utf-8")
+              move_req = urllib.request.Request(
+                  f"${{ secrets.JIRA_BASE_URL }}/rest/api/3/issue/{issue_key}/transitions",
+                  data=trans_payload,
+                  headers={
+                      "Authorization": f"Basic {credentials}",
+                      "Content-Type":  "application/json",
+                  },
+                  method="POST",
+              )
+              with urllib.request.urlopen(move_req) as resp:
+                  print(f"Ticket {issue_key} deplace en To Do")
+          else:
+              print(f"Transition To Do introuvable — ticket {issue_key} laisse en Backlog")
+              print(f"Transitions disponibles : {[t['name'] for t in transitions]}")
           EOF
 
   # ── Job séparé : rapport Allure + GitHub Pages ────────────────────────────
