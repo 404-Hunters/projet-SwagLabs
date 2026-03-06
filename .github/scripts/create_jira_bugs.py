@@ -115,9 +115,16 @@ def adf_info_table(data):
     Returns:
         Dictionnaire ADF représentant un tableau
     """
-    rows = [
+    # Ligne d'en-tête avec les titres des colonnes
+    header_row = adf_table_row([
+        adf_table_cell("Champ", is_header=True),
+        adf_table_cell("Valeur", is_header=True)
+    ])
+    
+    # Lignes de données
+    data_rows = [
         adf_table_row([
-            adf_table_cell(champ, is_header=True),
+            adf_table_cell(champ),
             adf_table_cell(valeur)
         ])
         for champ, valeur in data
@@ -126,7 +133,7 @@ def adf_info_table(data):
     return {
         "type": "table",
         "attrs": {"isNumberColumnEnabled": False, "layout": "default"},
-        "content": rows
+        "content": [header_row] + data_rows
     }
 
 
