@@ -90,6 +90,46 @@ def adf_bullet_list(items):
     }
 
 
+def adf_table_row(cells):
+    """Crée une ligne de tableau ADF."""
+    return {"type": "tableRow", "content": cells}
+
+
+def adf_table_cell(text, is_header=False):
+    """Crée une cellule de tableau ADF."""
+    cell_type = "tableHeader" if is_header else "tableCell"
+    return {
+        "type": cell_type,
+        "attrs": {},
+        "content": [{"type": "paragraph", "content": [{"type": "text", "text": str(text)}]}]
+    }
+
+
+def adf_info_table(data):
+    """
+    Crée un tableau à 2 colonnes (Champ | Valeur) pour afficher des informations.
+    
+    Args:
+        data: Liste de tuples (champ, valeur)
+        
+    Returns:
+        Dictionnaire ADF représentant un tableau
+    """
+    rows = [
+        adf_table_row([
+            adf_table_cell(champ, is_header=True),
+            adf_table_cell(valeur)
+        ])
+        for champ, valeur in data
+    ]
+    
+    return {
+        "type": "table",
+        "attrs": {"isNumberColumnEnabled": False, "layout": "default"},
+        "content": rows
+    }
+
+
 # ── Appels API Jira ─────────────────────────────────────────────────────────
 def create_ticket(summary, description_adf):
     """
@@ -258,16 +298,18 @@ def build_bug_description(r, bug_id, scenario, module, username, step, screensho
             # ── Titre ───────────────────────────────────────────────────────
             adf_heading(f"ANOMALIE {bug_id} - Echec du scenario {scenario}", 3),
 
-            # ── Informations générales ──────────────────────────────────────
+            # ── Informations générales (tableau) ────────────────────────────
             adf_heading("Informations generales", 3),
-            {"type": "paragraph", "content": [{"type": "text", "text": "ID : ", "marks": [{"type": "strong"}]}, {"type": "text", "text": bug_id}]},
-            {"type": "paragraph", "content": [{"type": "text", "text": "Statut : ", "marks": [{"type": "strong"}]}, {"type": "text", "text": "Ouvert"}]},
-            {"type": "paragraph", "content": [{"type": "text", "text": "Priorite : ", "marks": [{"type": "strong"}]}, {"type": "text", "text": "Majeure"}]},
-            {"type": "paragraph", "content": [{"type": "text", "text": "Severite : ", "marks": [{"type": "strong"}]}, {"type": "text", "text": "Haute"}]},
-            {"type": "paragraph", "content": [{"type": "text", "text": "Module : ", "marks": [{"type": "strong"}]}, {"type": "text", "text": module}]},
-            {"type": "paragraph", "content": [{"type": "text", "text": "Environnement : ", "marks": [{"type": "strong"}]}, {"type": "text", "text": "Test - Chrome - Ubuntu (CI)"}]},
-            {"type": "paragraph", "content": [{"type": "text", "text": "Rapporte par : ", "marks": [{"type": "strong"}]}, {"type": "text", "text": actor}]},
-            {"type": "paragraph", "content": [{"type": "text", "text": "Date : ", "marks": [{"type": "strong"}]}, {"type": "text", "text": run_date}]},
+            adf_info_table([
+                ("ID", bug_id),
+                ("Statut", "Ouvert"),
+                ("Priorite", "Majeure"),
+                ("Severite", "Haute"),
+                ("Module", module),
+                ("Environnement", "Test - Chrome - Ubuntu (CI)"),
+                ("Rapporte par", actor),
+                ("Date", run_date),
+            ]),
 
             # ── Description ─────────────────────────────────────────────────
             adf_heading("Description", 3),
