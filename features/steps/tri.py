@@ -1,6 +1,6 @@
-from behave import given, when, then, step
+from behave import given, then, step
 from selenium.webdriver.support.ui import Select
-from support.helpers import find_element, wait_for_elements, wait_for_element_visible, wait_for_element_clickable, wait_for_url_contains
+from support.helpers import wait_for_elements, wait_for_element_clickable
 from support.locators import InventoryPageLocators
 
 @given('le texte du sélecteur de tri affiche "{sort_option}"')

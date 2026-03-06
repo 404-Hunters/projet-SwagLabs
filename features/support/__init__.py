@@ -23,6 +23,7 @@ from .helpers import (
     localiser_produit_par_nom,
     localiser_cta_produit,
     click_bouton_link_panier,
+    wait_for_text_in_element,
 )
 
 
@@ -50,4 +51,5 @@ __all__ = [
     'localiser_produit_par_nom',
     'localiser_cta_produit',
     'click_bouton_link_panier',
+    'wait_for_text_in_element',
 ]

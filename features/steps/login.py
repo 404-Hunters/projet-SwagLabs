@@ -1,9 +1,6 @@
 from behave import given, when, then
 import logging
-from selenium.webdriver.common.by import By
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
-from support.helpers import find_element, wait_for_element, wait_for_elements, wait_for_element_clickable, click_element, send_keys_to_element, wait_for_url_contains
+from support.helpers import wait_for_element, wait_for_elements, wait_for_element_clickable, wait_for_element_visible, click_element, wait_for_url_contains
 from support.locators import LoginPageLocators, InventoryPageLocators
 
 
@@ -16,9 +13,9 @@ def step_enter_text_in_field(context, text, field_name):
     logging.info(f"Tentative de saisie de '{text}' dans {field_name}")
 
     if field_name == "Username":
-        field = find_element(context.browser, LoginPageLocators.USERNAME_INPUT)
+        field = wait_for_element_visible(context.browser, LoginPageLocators.USERNAME_INPUT)
     elif field_name == "Password":
-        field = find_element(context.browser, LoginPageLocators.PASSWORD_INPUT)
+        field = wait_for_element_visible(context.browser, LoginPageLocators.PASSWORD_INPUT)
     else:
         raise ValueError(f"Champ inconnu : {field_name}")
     
@@ -39,9 +36,9 @@ def step_leave_field_empty(context, field_name):
     logging.info(f"Tentative de laisser le champ {field_name} vide")
 
     if field_name == "Username":
-        field = find_element(context.browser, LoginPageLocators.USERNAME_INPUT)
+        field = wait_for_element_visible(context.browser, LoginPageLocators.USERNAME_INPUT)
     elif field_name == "Password":
-        field = find_element(context.browser, LoginPageLocators.PASSWORD_INPUT)
+        field = wait_for_element_visible(context.browser, LoginPageLocators.PASSWORD_INPUT)
     else:
         raise ValueError(f"Champ inconnu : {field_name}")
     
@@ -57,7 +54,7 @@ def step_leave_field_empty(context, field_name):
 @when('l\'utilisateur clique sur le bouton "{button_name}"')
 def step_click_button(context, button_name):
     if button_name == "Login":
-        button = find_element(context.browser, LoginPageLocators.LOGIN_BUTTON)
+        button = wait_for_element_clickable(context.browser, LoginPageLocators.LOGIN_BUTTON)
         assert button is not None, f"Bouton {button_name} non trouvé"
         button.click()
     else:

@@ -57,3 +57,6 @@ class CheckoutPageLocators:
     COMPLETE_HEADER = (By.CSS_SELECTOR, "h2.complete-header[data-test='complete-header']")
     CONTINUE_SHOPPING_BUTTON = (By.CSS_SELECTOR, "button[data-test='continue-shopping']")
     ERROR_MESSAGE = (By.CSS_SELECTOR, "h3[data-test='error']")
+    ITEM_TOTAL_PRICE = (By.CSS_SELECTOR, "div[data-test='subtotal-label']")
+    TAX_AMOUNT = (By.CSS_SELECTOR, "div[data-test='tax-label']")
+    TOTAL_PRICE = (By.CSS_SELECTOR, "div[data-test='total-label']")

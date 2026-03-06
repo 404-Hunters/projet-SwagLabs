@@ -1,8 +1,5 @@
 from behave import given, when, then
-from selenium.webdriver.common.by import By
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
-from support.helpers import find_element, wait_for_element, wait_for_elements, wait_for_element_visible, click_element, send_keys_to_element, wait_for_url_contains, login, wait_for_element_clickable, localiser_cta_produit, click_bouton_link_panier, localiser_produit_par_nom
+from support.helpers import wait_for_element_visible, wait_for_url_contains, login, wait_for_element_clickable, localiser_cta_produit, click_bouton_link_panier, localiser_produit_par_nom
 from support.locators import InventoryPageLocators, CartPageLocators
 
 # Précondition : Connexion préalable
