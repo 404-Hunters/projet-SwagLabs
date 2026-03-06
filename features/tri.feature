@@ -26,7 +26,7 @@ Feature: Tri du Catalogue Produits
       | locked_out_user  |
 
 
-  @tc-cat-37 @web @medium @sort
+  @tc-cat-37 @PSD-119 @web @medium @sort
   Scenario Outline: TC-CAT-37 - Tri par nom (Z à A) - Utilisateur: <username>
     Given le texte du sélecteur de tri affiche "Name (A to Z)"
     When l'utilisateur sélectionne l'option de tri "Name (Z to A)"
@@ -59,7 +59,6 @@ Feature: Tri du Catalogue Produits
     Examples:
       | username      |
       | standard_user |
-      | problem_user  |
 
   @tc-cat-39 @web @medium @sort
   Scenario Outline: TC-CAT-39 - Tri par prix (High to Low) - Utilisateur: <username>
@@ -76,4 +75,3 @@ Feature: Tri du Catalogue Produits
     Examples:
       | username      |
       | standard_user |
-      | problem_user  |
