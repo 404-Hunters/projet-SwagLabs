@@ -24,6 +24,8 @@ import urllib.request
 import urllib.parse
 import urllib.error
 import os
+import mimetypes
+import re
 from datetime import datetime, timezone
 
 
@@ -48,6 +50,11 @@ credentials = base64.b64encode(
 headers = {
     "Authorization": f"Basic {credentials}",
     "Content-Type": "application/json",
+}
+
+headers_multipart = {
+    "Authorization": f"Basic {credentials}",
+    "X-Atlassian-Token": "no-check",
 }
 
 
@@ -232,6 +239,106 @@ def ticket_exists(bug_id):
     return None
 
 
+def upload_attachment(issue_key, file_path):
+    """
+    Upload une pièce jointe à un ticket Jira.
+    
+    Args:
+        issue_key: Clé du ticket Jira (ex: "PSD-123")
+        file_path: Chemin du fichier à uploader
+        
+    Returns:
+        L'ID de l'attachement uploadé, ou None en cas d'erreur
+    """
+    if not os.path.exists(file_path):
+        print(f"  ⚠️  Fichier non trouvé : {file_path}")
+        return None
+    
+    # Vérifier la taille du fichier
+    file_size = os.path.getsize(file_path)
+    file_size_mb = file_size / (1024 * 1024)
+    
+    # Déterminer le type MIME
+    mime_type, _ = mimetypes.guess_type(file_path)
+    if not mime_type:
+        mime_type = "application/octet-stream"
+    
+    filename = os.path.basename(file_path)
+    print(f"  📤 Upload en cours : {filename} ({file_size_mb:.2f} MB, {mime_type})")
+    
+    # Lire le fichier
+    with open(file_path, "rb") as f:
+        file_content = f.read()
+    
+    # Préparer le multipart/form-data
+    boundary = "----WebKitFormBoundary" + base64.b64encode(os.urandom(16)).decode()[:16]
+    
+    body = (
+        f"--{boundary}\r\n"
+        f'Content-Disposition: form-data; name="file"; filename="{filename}"\r\n'
+        f"Content-Type: {mime_type}\r\n\r\n"
+    ).encode() + file_content + f"\r\n--{boundary}--\r\n".encode()
+    
+    headers_upload = {
+        "Authorization": f"Basic {credentials}",
+        "X-Atlassian-Token": "no-check",
+        "Content-Type": f"multipart/form-data; boundary={boundary}",
+    }
+    
+    req = urllib.request.Request(
+        f"{JIRA_BASE}/rest/api/3/issue/{issue_key}/attachments",
+        data=body,
+        headers=headers_upload,
+        method="POST",
+    )
+    
+    try:
+        with urllib.request.urlopen(req) as resp:
+            result = json.load(resp)
+            if result:
+                attachment_id = result[0].get("id")
+                print(f"  📎 Screenshot uploadé : {filename} (ID: {attachment_id})")
+                return attachment_id
+    except urllib.error.HTTPError as e:
+        error_body = e.read().decode("utf-8", errors="ignore")
+        print(f"  ⚠️  Erreur HTTP {e.code} lors de l'upload : {e.reason}")
+        print(f"      Détails : {error_body[:200]}")  # Afficher les premiers 200 caractères
+        if e.code == 500 and file_size_mb > 10:
+            print(f"      ℹ️  Fichier peut-être trop volumineux ({file_size_mb:.2f} MB)")
+    except Exception as e:
+        print(f"  ⚠️  Erreur lors de l'upload du fichier : {e}")
+    
+    return None
+
+
+def adf_media_image(attachment_id, filename):
+    """
+    Crée un élément média image ADF pour afficher une pièce jointe.
+    
+    Args:
+        attachment_id: ID de l'attachement dans Jira
+        filename: Nom du fichier
+        
+    Returns:
+        Dictionnaire ADF pour afficher l'image
+    """
+    return {
+        "type": "mediaSingle",
+        "attrs": {"layout": "center"},
+        "content": [
+            {
+                "type": "media",
+                "attrs": {
+                    "type": "file",
+                    "id": attachment_id,
+                    "collection": "",
+                    "alt": filename,
+                }
+            }
+        ]
+    }
+
+
 def create_ticket(summary, description_adf, epic_key=None):
     """
     Crée un ticket de bug dans Jira.
@@ -383,6 +490,9 @@ def build_bug_description(r, bug_id, scenario, module, username, step, screensho
     """
     run_date = datetime.now(timezone.utc).strftime("%d/%m/%Y")
     
+    # Nettoyer le nom du scénario (supprimer les tags -- @X.X)
+    scenario_clean = re.sub(r'\s*--\s*@[\d.]+\s*', '', scenario).strip()
+    
     # ── Résultat attendu ────────────────────────────────────────────────────
     steps_data = r.get("steps", [])
     then_steps = [
@@ -440,7 +550,7 @@ def build_bug_description(r, bug_id, scenario, module, username, step, screensho
         "type": "doc", "version": 1,
         "content": [
             # ── Titre ───────────────────────────────────────────────────────
-            adf_heading(f"ANOMALIE {bug_id} - Echec du scenario {scenario}", 3),
+            adf_heading(f"ANOMALIE {bug_id} - Echec du scenario {scenario_clean}", 3),
 
             # ── Informations générales (tableau) ────────────────────────────
             adf_heading("Informations generales", 3),
@@ -458,7 +568,7 @@ def build_bug_description(r, bug_id, scenario, module, username, step, screensho
             # ── Description ─────────────────────────────────────────────────
             adf_heading("Description", 3),
             adf_paragraph(adf_text(
-                f"Echec automatique detecte sur le scenario '{scenario}' "
+                f"Echec automatique detecte sur le scenario '{scenario_clean}' "
                 f"lors de l'execution avec le profil '{username}'."
             )),
 
@@ -468,7 +578,7 @@ def build_bug_description(r, bug_id, scenario, module, username, step, screensho
 
             # ── Résultat obtenu ─────────────────────────────────────────────
             adf_heading("Resultat obtenu", 3),
-            adf_code_block(obtained),
+            adf_paragraph(adf_text(obtained)),
 
             # ── Résultat attendu ────────────────────────────────────────────
             adf_heading("Resultat attendu", 3),
@@ -483,10 +593,8 @@ def build_bug_description(r, bug_id, scenario, module, username, step, screensho
 
             # ── Preuves ─────────────────────────────────────────────────────
             adf_heading("Preuves", 3),
-            adf_bullet_list([
-                f"Screenshot : {screenshot} (voir artefacts du run GitHub Actions)",
-                f"Rapport Allure : {allure_url}",
-            ]),
+            adf_paragraph(adf_text("Screenshot de l'erreur : voir piece jointe ci-dessous")),
+            adf_paragraph(adf_text(f"Rapport Allure complet : {allure_url}")),
 
             # ── Informations techniques ─────────────────────────────────────
             adf_heading("Informations techniques", 3),
@@ -555,6 +663,10 @@ def process_failure_reports():
         in_todo = transition_to_todo(issue_key)
         status = "✅ To Do" if in_todo else "⚠️  Backlog"
         print(f"{issue_key} [{status}] — {summary}")
+
+        # ── Upload du screenshot ────────────────────────────────────────────
+        if screenshot and os.path.exists(screenshot):
+            upload_attachment(issue_key, screenshot)
 
         # ── Lien vers le ticket de cas de test ──────────────────────────────
         test_case_key = next(

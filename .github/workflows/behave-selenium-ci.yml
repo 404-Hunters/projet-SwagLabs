@@ -163,6 +163,14 @@ jobs:
           name: failure-reports
           path: reports/failures/
 
+      # ── 13b. Récupération des screenshots ─────────────────────────────────
+      - name: Télécharger les screenshots
+        uses: actions/download-artifact@v4
+        continue-on-error: true
+        with:
+          name: test-artifacts
+          path: .
+
       # ── 14. Vérifier s'il y a des échecs ─────────────────────────────────
       - name: Vérifier la présence d'échecs
         id: check
