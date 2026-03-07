@@ -26,6 +26,7 @@ import urllib.error
 import os
 import mimetypes
 import re
+import time
 from datetime import datetime, timezone
 
 
@@ -217,9 +218,13 @@ def ticket_exists(bug_id):
     Returns:
         La clé du ticket s'il existe, None sinon
     """
-    # Recherche JQL pour trouver un ticket avec ce bug_id dans le summary
-    jql = f'project = PSD AND issuetype = Bug AND summary ~ "{bug_id}"'
-    params = urllib.parse.urlencode({"jql": jql, "fields": "key,summary"})
+    # Recherche JQL pour trouver un ticket avec le summary exact
+    # Le summary créé est: [BUG] {bug_id}
+    summary_to_find = f"[BUG] {bug_id}"
+    jql = f'project = PSD AND issuetype = Bug AND summary ~ "\\"{summary_to_find}\\""'
+    
+    # Utilisation de l'API v3 (l'API v2 est dépréciée et retourne HTTP 410)
+    params = urllib.parse.urlencode({"jql": jql, "fields": "key,summary", "maxResults": 1})
     
     req = urllib.request.Request(
         f"{JIRA_BASE}/rest/api/3/search?{params}",
@@ -232,7 +237,15 @@ def ticket_exists(bug_id):
             result = json.load(resp)
             issues = result.get("issues", [])
             if issues:
+                print(f"  ✅ Ticket existant trouvé : {issues[0]['key']} - {issues[0]['fields']['summary']}")
                 return issues[0]["key"]
+            else:
+                print(f"  ℹ️  Aucun ticket existant trouvé pour : {summary_to_find}")
+    except urllib.error.HTTPError as e:
+        if e.code == 410:
+            print(f"  ⚠️  Endpoint de recherche déprécié (HTTP 410) - création du ticket sans vérification")
+        else:
+            print(f"  ⚠️  Erreur HTTP {e.code} lors de la vérification d'existence : {e.reason}")
     except Exception as e:
         print(f"  ⚠️  Erreur lors de la vérification d'existence : {e}")
     
@@ -241,7 +254,7 @@ def ticket_exists(bug_id):
 
 def upload_attachment(issue_key, file_path):
     """
-    Upload une pièce jointe à un ticket Jira.
+    Upload une pièce jointe à un ticket Jira avec retry robuste.
     
     Args:
         issue_key: Clé du ticket Jira (ex: "PSD-123")
@@ -285,6 +298,13 @@ def upload_attachment(issue_key, file_path):
         "Content-Type": f"multipart/form-data; boundary={boundary}",
     }
     
+    # Timeout adaptatif : 30s de base + 10s par MB
+    adaptive_timeout = max(30, int(30 + file_size_mb * 10))
+    
+    # Configuration du retry
+    max_retries = 3
+    retry_delay = 6  # secondes
+    
     req = urllib.request.Request(
         f"{JIRA_BASE}/rest/api/3/issue/{issue_key}/attachments",
         data=body,
@@ -292,21 +312,43 @@ def upload_attachment(issue_key, file_path):
         method="POST",
     )
     
-    try:
-        with urllib.request.urlopen(req) as resp:
-            result = json.load(resp)
-            if result:
-                attachment_id = result[0].get("id")
-                print(f"  📎 Screenshot uploadé : {filename} (ID: {attachment_id})")
-                return attachment_id
-    except urllib.error.HTTPError as e:
-        error_body = e.read().decode("utf-8", errors="ignore")
-        print(f"  ⚠️  Erreur HTTP {e.code} lors de l'upload : {e.reason}")
-        print(f"      Détails : {error_body[:200]}")  # Afficher les premiers 200 caractères
-        if e.code == 500 and file_size_mb > 10:
-            print(f"      ℹ️  Fichier peut-être trop volumineux ({file_size_mb:.2f} MB)")
-    except Exception as e:
-        print(f"  ⚠️  Erreur lors de l'upload du fichier : {e}")
+    for attempt in range(max_retries):
+        try:
+            with urllib.request.urlopen(req, timeout=adaptive_timeout) as resp:
+                result = json.load(resp)
+                if result:
+                    attachment_id = result[0].get("id")
+                    print(f"  📎 Screenshot uploadé : {filename} (ID: {attachment_id})")
+                    return attachment_id
+        except urllib.error.HTTPError as e:
+            error_body = e.read().decode("utf-8", errors="ignore")
+            
+            if e.code == 500:
+                if attempt < max_retries - 1:
+                    print(f"  ⚠️  Erreur HTTP 500 (tentative {attempt + 1}/{max_retries}) - retry dans {retry_delay}s...")
+                    time.sleep(retry_delay)
+                    continue
+                else:
+                    print(f"  ⚠️  Erreur HTTP 500 persistante après {max_retries} tentatives")
+                    print(f"      Fichier : {filename} ({file_size_mb:.2f} MB)")
+                    print(f"      Détails : {error_body[:200]}")
+            elif e.code == 413:
+                print(f"  ⚠️  Fichier trop volumineux ({file_size_mb:.2f} MB) - limite Jira dépassée")
+                return None
+            else:
+                print(f"  ⚠️  Erreur HTTP {e.code} lors de l'upload : {e.reason}")
+                print(f"      Détails : {error_body[:200]}")
+            break
+        except urllib.error.URLError as e:
+            print(f"  ⚠️  Erreur réseau (tentative {attempt + 1}/{max_retries}) : {e.reason}")
+            if attempt < max_retries - 1:
+                print(f"      Nouvelle tentative dans {retry_delay}s...")
+                time.sleep(retry_delay)
+                continue
+            break
+        except Exception as e:
+            print(f"  ⚠️  Erreur lors de l'upload : {e}")
+            break
     
     return None
 
