@@ -398,6 +398,7 @@ def create_ticket(summary, description_adf, epic_key=None):
         "issuetype": {"name": "Bug"},
         "summary": summary,
         "description": description_adf,
+        "labels": ["Automatique"],
     }
     
     # Lier le bug à son EPIC parent si fourni
@@ -427,9 +428,9 @@ def create_ticket(summary, description_adf, epic_key=None):
         raise
 
 
-def transition_to_todo(issue_key):
+def transition_to_bug(issue_key):
     """
-    Tente de faire passer le ticket à l'état "To Do" / "À faire".
+    Tente de faire passer le ticket à l'état "BUG".
     
     Args:
         issue_key: La clé du ticket Jira
@@ -444,12 +445,12 @@ def transition_to_todo(issue_key):
     with urllib.request.urlopen(req) as resp:
         transitions = json.load(resp)["transitions"]
     
-    todo_id = next(
-        (t["id"] for t in transitions if t["name"].lower() in ("to do", "à faire")),
+    bug_id = next(
+        (t["id"] for t in transitions if t["name"].lower() == "bug"),
         None
     )
-    if todo_id:
-        payload = json.dumps({"transition": {"id": todo_id}}).encode("utf-8")
+    if bug_id:
+        payload = json.dumps({"transition": {"id": bug_id}}).encode("utf-8")
         req = urllib.request.Request(
             f"{JIRA_BASE}/rest/api/3/issue/{issue_key}/transitions",
             data=payload,
@@ -702,8 +703,8 @@ def process_failure_reports():
 
         # ── Création du ticket ──────────────────────────────────────────────
         issue_key = create_ticket(summary, description_adf, epic_key)
-        in_todo = transition_to_todo(issue_key)
-        status = "✅ To Do" if in_todo else "⚠️  Backlog"
+        in_bug = transition_to_bug(issue_key)
+        status = "✅ BUG" if in_bug else "⚠️  Backlog"
         print(f"{issue_key} [{status}] — {summary}")
 
         # ── Upload du screenshot ────────────────────────────────────────────
