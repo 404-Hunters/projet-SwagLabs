@@ -232,13 +232,14 @@ def ticket_exists(bug_id):
     return None
 
 
-def create_ticket(summary, description_adf):
+def create_ticket(summary, description_adf, epic_key=None):
     """
     Crée un ticket de bug dans Jira.
     
     Args:
         summary: Le titre du ticket
         description_adf: La description au format ADF
+        epic_key: Clé de l'EPIC parent (ex: "PSD-95"), optionnel
         
     Returns:
         La clé du ticket créé (ex: "PSD-123")
@@ -249,6 +250,10 @@ def create_ticket(summary, description_adf):
         "summary": summary,
         "description": description_adf,
     }
+    
+    # Lier le bug à son EPIC parent si fourni
+    if epic_key:
+        fields["parent"] = {"key": epic_key}
 
     payload = json.dumps({"fields": fields}).encode("utf-8")
     
@@ -527,6 +532,10 @@ def process_failure_reports():
             tc_id = "UNKNOWN"
             bug_id = f"BUG-UNKNOWN-{username}"
 
+        # Extraire l'EPIC parent depuis les tags (format: @epic-PSD-95)
+        epic_tag = next((t for t in tags if t.startswith("epic-")), None)
+        epic_key = epic_tag.replace("epic-", "").upper() if epic_tag else None
+
         module = determine_module(tc_tag)
         summary = f"[BUG] {bug_id}"
 
@@ -542,7 +551,7 @@ def process_failure_reports():
         )
 
         # ── Création du ticket ──────────────────────────────────────────────
-        issue_key = create_ticket(summary, description_adf)
+        issue_key = create_ticket(summary, description_adf, epic_key)
         in_todo = transition_to_todo(issue_key)
         status = "✅ To Do" if in_todo else "⚠️  Backlog"
         print(f"{issue_key} [{status}] — {summary}")
