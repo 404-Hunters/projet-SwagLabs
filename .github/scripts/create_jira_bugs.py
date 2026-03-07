@@ -218,16 +218,13 @@ def ticket_exists(bug_id):
     Returns:
         La clé du ticket s'il existe, None sinon
     """
-    # Recherche JQL pour trouver un ticket avec le summary exact
-    # Le summary créé est: [BUG] {bug_id}
-    summary_to_find = f"[BUG] {bug_id}"
-    jql = f'project = PSD AND issuetype = Bug AND summary ~ "\\"{summary_to_find}\\""'
-    
-    # Utilisation de l'API v3 (l'API v2 est dépréciée et retourne HTTP 410)
-    params = urllib.parse.urlencode({"jql": jql, "fields": "key,summary", "maxResults": 1})
+    # Utilisation du nouvel endpoint /search/jql (l'ancien /search a été supprimé)
+    # Recherche avec 'text' qui fonctionne sur cette instance Jira
+    jql = f'project = PSD AND issuetype = Bug AND text ~ "{bug_id}"'
+    params = urllib.parse.urlencode({"jql": jql, "fields": "key,summary", "maxResults": 10})
     
     req = urllib.request.Request(
-        f"{JIRA_BASE}/rest/api/3/search?{params}",
+        f"{JIRA_BASE}/rest/api/3/search/jql?{params}",
         headers=headers,
         method="GET",
     )
@@ -237,19 +234,21 @@ def ticket_exists(bug_id):
             result = json.load(resp)
             issues = result.get("issues", [])
             if issues:
-                print(f"  ✅ Ticket existant trouvé : {issues[0]['key']} - {issues[0]['fields']['summary']}")
-                return issues[0]["key"]
-            else:
-                print(f"  ℹ️  Aucun ticket existant trouvé pour : {summary_to_find}")
+                # Vérifier que le bug_id est exactement dans le summary
+                for issue in issues:
+                    summary = issue['fields']['summary']
+                    # Le summary contient : [BUG] BUG-CAT-36-locked_out_user
+                    if bug_id in summary:
+                        print(f"  ✅ Ticket existant trouvé : {issue['key']} - {summary}")
+                        return issue["key"]
+            print(f"  ℹ️  Aucun ticket existant pour : {bug_id}")
+            return None
     except urllib.error.HTTPError as e:
-        if e.code == 410:
-            print(f"  ⚠️  Endpoint de recherche déprécié (HTTP 410) - création du ticket sans vérification")
-        else:
-            print(f"  ⚠️  Erreur HTTP {e.code} lors de la vérification d'existence : {e.reason}")
+        print(f"  ⚠️  Erreur HTTP {e.code} lors de la vérification : {e.reason}")
+        return None
     except Exception as e:
-        print(f"  ⚠️  Erreur lors de la vérification d'existence : {e}")
-    
-    return None
+        print(f"  ⚠️  Erreur lors de la vérification : {e}")
+        return None
 
 
 def upload_attachment(issue_key, file_path):
