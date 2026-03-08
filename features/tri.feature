@@ -44,7 +44,7 @@ Feature: Tri du Catalogue Produits
       | standard_user |
       | problem_user  |
 
-  @tc-cat-38 @web @medium @sort @epic-PSD-95
+  @tc-cat-38 @PSD-120 @web @medium @sort @epic-PSD-95
   Scenario Outline: TC-CAT-38 - Tri par prix (Low to High) - Utilisateur: <username>
     When l'utilisateur sélectionne l'option de tri "Price (low to high)"
     Then les produits avec leurs noms et leurs prix sont affichés dans cet ordre :
@@ -59,8 +59,9 @@ Feature: Tri du Catalogue Produits
     Examples:
       | username      |
       | standard_user |
+      | problem_user  |
 
-  @tc-cat-39 @web @medium @sort @epic-PSD-95
+  @tc-cat-39 @PSD-121 @web @medium @sort @epic-PSD-95
   Scenario Outline: TC-CAT-39 - Tri par prix (High to Low) - Utilisateur: <username>
     When l'utilisateur sélectionne l'option de tri "Price (high to low)"
     Then les produits avec leurs noms et leurs prix sont affichés dans cet ordre :
@@ -75,3 +76,4 @@ Feature: Tri du Catalogue Produits
     Examples:
       | username      |
       | standard_user |
+      | problem_user  |
