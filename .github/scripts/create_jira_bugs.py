@@ -285,11 +285,14 @@ def upload_attachment(issue_key, file_path):
     # Préparer le multipart/form-data
     boundary = "----WebKitFormBoundary" + base64.b64encode(os.urandom(16)).decode()[:16]
     
+    # Encoder le nom de fichier selon RFC 2231 pour gérer les caractères spéciaux
+    filename_encoded = urllib.parse.quote(filename, safe='')
+    
     body = (
         f"--{boundary}\r\n"
-        f'Content-Disposition: form-data; name="file"; filename="{filename}"\r\n'
+        f'Content-Disposition: form-data; name="file"; filename="{filename}"; filename*=UTF-8\'\'{filename_encoded}\r\n'
         f"Content-Type: {mime_type}\r\n\r\n"
-    ).encode() + file_content + f"\r\n--{boundary}--\r\n".encode()
+    ).encode('utf-8') + file_content + f"\r\n--{boundary}--\r\n".encode('utf-8')
     
     headers_upload = {
         "Authorization": f"Basic {credentials}",
@@ -692,6 +695,10 @@ def process_failure_reports():
         # ── Vérifier si le ticket existe déjà ───────────────────────────────
         existing_key = ticket_exists(bug_id)
         if existing_key:
+            print(f"  ✅ Ticket existant trouvé : {existing_key} - {summary}")
+            # Upload du screenshot même sur ticket existant (complète ou met à jour)
+            if screenshot and os.path.exists(screenshot):
+                upload_attachment(existing_key, screenshot)
             print(f"⏭️  {existing_key} — {summary} (ticket déjà existant, ignoré)")
             continue
 
