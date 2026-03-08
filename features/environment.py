@@ -175,7 +175,7 @@ def after_scenario(context, scenario):
 
         # ── Rapport résultat pour la matrice Jira (pass ET fail) ─────────
         tc_tag = next(
-            (t for t in scenario.effective_tags if t.startswith("tc-")),
+            (t for t in scenario.effective_tags if t.lower().startswith("tc-")),
             None
         )
 

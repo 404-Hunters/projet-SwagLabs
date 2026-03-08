@@ -674,7 +674,7 @@ def process_failure_reports():
         screenshot = r.get("screenshot_path", "")
 
         # ── Identifiants ────────────────────────────────────────────────────
-        tc_tag = next((t for t in tags if t.startswith("tc-")), None)
+        tc_tag = next((t for t in tags if t.lower().startswith("tc-")), None)
         if tc_tag:
             tc_id = tc_tag.upper().replace("TC-", "")
             bug_id = f"BUG-{tc_id}-{username}"
@@ -683,8 +683,8 @@ def process_failure_reports():
             bug_id = f"BUG-UNKNOWN-{username}"
 
         # Extraire l'EPIC parent depuis les tags (format: @epic-PSD-95)
-        epic_tag = next((t for t in tags if t.startswith("epic-")), None)
-        epic_key = epic_tag.replace("epic-", "").upper() if epic_tag else None
+        epic_tag = next((t for t in tags if t.lower().startswith("epic-")), None)
+        epic_key = epic_tag.replace("epic-", "").replace("EPIC-", "").upper() if epic_tag else None
 
         module = determine_module(tc_tag)
         summary = f"[BUG] {bug_id}"

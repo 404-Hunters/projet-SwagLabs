@@ -161,10 +161,10 @@ def load_test_results():
         with open(path, encoding="utf-8") as f:
             r = json.load(f)
         
-        # Rechercher le tag du cas de test (ex: "tc-cart-01")
+        # Rechercher le tag du cas de test (ex: "tc-cart-01" ou "TC-CART-01")
         for tag in r.get("tags", []):
-            if tag.startswith("tc-"):
-                results[tag][r["username"]] = {
+            if tag.lower().startswith("tc-"):
+                results[tag.lower()][r["username"]] = {
                     "steps": r.get("steps", []),
                     "status": r.get("status", "PASS"),
                     "tags": r.get("tags", []),
