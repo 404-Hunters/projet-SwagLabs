@@ -538,25 +538,34 @@ def build_bug_description(r, bug_id, scenario, module, username, step, screensho
     # Nettoyer le nom du scénario (supprimer les tags -- @X.X)
     scenario_clean = re.sub(r'\s*--\s*@[\d.]+\s*', '', scenario).strip()
     
-    # ── Résultat attendu ────────────────────────────────────────────────────
+    # ── Résultat attendu (utiliser l'étape qui a réellement échoué) ────────
     steps_data = r.get("steps", [])
-    then_steps = [
-        s for s in steps_data 
-        if isinstance(s, dict) and s.get("text", "").startswith("then")
-    ]
+    failed_step_name = step.get("step_name", "")
     
+    # Chercher l'étape qui correspond au failed_step dans les steps
     expected_content = []
-    if then_steps:
-        last_then = then_steps[-1]
-        expected_text = last_then.get("text", "").replace("then ", "")
+    if failed_step_name and steps_data:
+        # Trouver l'étape échouée dans la liste
+        failed_step_obj = None
+        for s in steps_data:
+            if isinstance(s, dict):
+                step_text = s.get("text", "")
+                # Comparer sans le préfixe (given/when/then)
+                step_text_clean = re.sub(r'^(given|when|then)\s+', '', step_text, flags=re.IGNORECASE)
+                if step_text_clean == failed_step_name:
+                    failed_step_obj = s
+                    break
         
-        # Ajouter le tableau en texte brut si présent
-        if last_then.get("table"):
-            table_text = table_to_text(last_then["table"])
-            if table_text:
-                expected_text += "\n" + table_text
-        
-        expected_content.append(adf_paragraph(adf_text(expected_text)))
+        if failed_step_obj:
+            expected_text = failed_step_name
+            
+            # Ajouter le tableau en texte brut si présent
+            if failed_step_obj.get("table"):
+                table_text = table_to_text(failed_step_obj["table"])
+                if table_text:
+                    expected_text += "\n" + table_text
+            
+            expected_content.append(adf_paragraph(adf_text(expected_text)))
     
     # S'assurer qu'on a toujours au moins un élément
     if not expected_content:
@@ -695,7 +704,6 @@ def process_failure_reports():
         # ── Vérifier si le ticket existe déjà ───────────────────────────────
         existing_key = ticket_exists(bug_id)
         if existing_key:
-            print(f"  ✅ Ticket existant trouvé : {existing_key} - {summary}")
             # Upload du screenshot même sur ticket existant (complète ou met à jour)
             if screenshot and os.path.exists(screenshot):
                 upload_attachment(existing_key, screenshot)

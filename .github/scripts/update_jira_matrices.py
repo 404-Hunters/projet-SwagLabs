@@ -157,6 +157,7 @@ def load_test_results():
     """
     results = defaultdict(dict)
 
+    # Charger les résultats de succès
     for path in glob.glob("reports/results/*.json"):
         with open(path, encoding="utf-8") as f:
             r = json.load(f)
@@ -168,7 +169,19 @@ def load_test_results():
                     "steps": r.get("steps", []),
                     "status": r.get("status", "PASS"),
                     "tags": r.get("tags", []),
+                    "failed_step": None,
                 }
+    
+    # Charger les échecs pour identifier l'étape échouée
+    for path in glob.glob("reports/failures/*.json"):
+        with open(path, encoding="utf-8") as f:
+            r = json.load(f)
+        
+        for tag in r.get("tags", []):
+            if tag.lower().startswith("tc-"):
+                username = r.get("username")
+                if username in results[tag.lower()]:
+                    results[tag.lower()][username]["failed_step"] = r.get("failed_step", {})
 
     return results
 
@@ -201,13 +214,44 @@ def build_matrix_adf(tc_tag, user_data):
         # Formater l'étape (gère les tableaux s'ils sont présents)
         step_text = format_step_text(step)
         cells = [adf_cell(f"{i}. {step_text}")]
+        
         for u in ALL_USERS:
             if u not in user_data:
                 cells.append(adf_cell("-"))
             elif user_data[u]["status"] == "PASS":
                 cells.append(adf_cell("✅"))
             else:
-                cells.append(adf_cell("❌"))
+                # Test échoué : identifier l'étape qui a échoué
+                failed_step_info = user_data[u].get("failed_step", {})
+                failed_step_name = failed_step_info.get("step_name", "") if failed_step_info else ""
+                
+                # Extraire le nom de l'étape courante (sans le préfixe given/when/then)
+                import re
+                current_step_clean = re.sub(r'^(given|when|then)\s+', '', step_text, flags=re.IGNORECASE)
+                
+                # Trouver l'index de l'étape échouée
+                failed_step_index = -1
+                if failed_step_name:
+                    for idx, s in enumerate(steps):
+                        s_text = format_step_text(s)
+                        s_clean = re.sub(r'^(given|when|then)\s+', '', s_text, flags=re.IGNORECASE)
+                        if s_clean.startswith(failed_step_name):
+                            failed_step_index = idx
+                            break
+                
+                if failed_step_index == -1:
+                    # Pas d'info sur l'étape échouée, marquer toutes en échec (fallback)
+                    cells.append(adf_cell("❌"))
+                elif i - 1 < failed_step_index:
+                    # Étape avant l'échec : passée avec succès
+                    cells.append(adf_cell("✅"))
+                elif i - 1 == failed_step_index:
+                    # C'est l'étape qui a échoué
+                    cells.append(adf_cell("❌"))
+                else:
+                    # Étape après l'échec : non exécutée
+                    cells.append(adf_cell("⊘"))
+        
         step_rows.append(adf_row(cells))
 
     # ── Ligne de résultat final ─────────────────────────────────────────────
