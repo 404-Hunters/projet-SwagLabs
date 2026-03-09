@@ -680,6 +680,9 @@ def process_failure_reports():
     
     print(f"Traitement de {len(failure_files)} rapport(s) d'échec...")
     
+    # Track les liens déjà créés pour éviter les doublons
+    created_links = set()
+    
     for path in failure_files:
         with open(path, encoding="utf-8") as f:
             r = json.load(f)
@@ -720,7 +723,10 @@ def process_failure_reports():
                 None
             )
             if test_case_key and test_case_key != existing_key:
-                link_to_test_case(existing_key, test_case_key, bug_id)
+                link_pair = (existing_key, test_case_key)
+                if link_pair not in created_links:
+                    link_to_test_case(existing_key, test_case_key, bug_id)
+                    created_links.add(link_pair)
             
             print(f"⏭️  {existing_key} — {summary} (ticket déjà existant, ignoré)")
             continue
@@ -746,7 +752,10 @@ def process_failure_reports():
             None
         )
         if test_case_key and test_case_key != issue_key:
-            link_to_test_case(issue_key, test_case_key, bug_id)
+            link_pair = (issue_key, test_case_key)
+            if link_pair not in created_links:
+                link_to_test_case(issue_key, test_case_key, bug_id)
+                created_links.add(link_pair)
         else:
             print(f"  ⚠️  Pas de tag PSD-XX dans les tags — lien ignore")
 
