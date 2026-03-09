@@ -512,6 +512,8 @@ def determine_module(tc_tag):
         return "Authentification"
     elif "cart" in tc_lower:
         return "Panier"
+    elif "check" in tc_lower:
+        return "Commande"
     elif "order" in tc_lower:
         return "Commande"
     return "Inconnu"
