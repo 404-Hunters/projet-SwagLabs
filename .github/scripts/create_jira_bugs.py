@@ -473,18 +473,11 @@ def link_to_test_case(bug_key, test_case_key, bug_id):
         test_case_key: Clé du ticket de cas de test
         bug_id: Identifiant court du bug (ex: "BUG-CART-01-standard_user")
     """
+    # Essayer sans commentaire d'abord (simplifié)
     link_payload = json.dumps({
         "type": {"name": "Relates"},
-        "inwardIssue": {"key": bug_key},
-        "outwardIssue": {"key": test_case_key},
-        "comment": {
-            "body": {
-                "type": "doc", "version": 1,
-                "content": [adf_paragraph(
-                    adf_text(f"Bug detecte automatiquement par la CI — {bug_id}")
-                )]
-            }
-        }
+        "inwardIssue": {"key": test_case_key},
+        "outwardIssue": {"key": bug_key}
     }).encode("utf-8")
     
     link_req = urllib.request.Request(
