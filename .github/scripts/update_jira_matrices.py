@@ -236,11 +236,16 @@ def build_matrix_adf(tc_tag, user_data):
                 # Trouver l'index de l'étape échouée
                 failed_step_index = -1
                 if failed_step_name:
+                    # Normaliser le nom de l'étape échouée (remplacer les noms de produits variables)
+                    failed_normalized = re.sub(r'"[^"]*"', '"{PRODUIT}"', failed_step_name)
+                    
                     for idx, s in enumerate(steps):
                         s_text = format_step_text(s)
                         s_clean = re.sub(r'^(given|when|then)\s+', '', s_text, flags=re.IGNORECASE)
-                        # Comparaison exacte ou contenue dans l'étape
-                        if failed_step_name in s_clean or s_clean == failed_step_name:
+                        s_normalized = re.sub(r'"[^"]*"', '"{PRODUIT}"', s_clean)
+                        
+                        # Comparaison avec normalisation
+                        if failed_normalized == s_normalized or failed_step_name in s_clean or s_clean == failed_step_name:
                             failed_step_index = idx
                             if i == 1:  # Log seulement une fois
                                 print(f"      → Étape échouée trouvée à l'index {idx} (étape #{idx+1})")
