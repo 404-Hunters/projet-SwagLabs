@@ -242,9 +242,13 @@ def build_matrix_adf(tc_tag, user_data):
                         # Comparaison exacte ou contenue dans l'étape
                         if failed_step_name in s_clean or s_clean == failed_step_name:
                             failed_step_index = idx
+                            if i == 1:  # Log seulement une fois
+                                print(f"      → Étape échouée trouvée à l'index {idx} (étape #{idx+1})")
                             break
                 
                 if failed_step_index == -1:
+                    if i == 1:  # Log seulement une fois
+                        print(f"      ⚠️  AUCUN MATCH trouvé - toutes les étapes seront marquées ❌")
                     # Pas d'info sur l'étape échouée, marquer toutes en échec (fallback)
                     cells.append(adf_cell("❌"))
                 elif i - 1 < failed_step_index:
