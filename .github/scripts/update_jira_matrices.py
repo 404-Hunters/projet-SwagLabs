@@ -225,6 +225,10 @@ def build_matrix_adf(tc_tag, user_data):
                 failed_step_info = user_data[u].get("failed_step", {})
                 failed_step_name = failed_step_info.get("step_name", "") if failed_step_info else ""
                 
+                # Debug: afficher l'info de l'étape échouée
+                if i == 1:  # Seulement pour la première ligne pour éviter le spam
+                    print(f"  [DEBUG] {tc_tag} - {u}: failed_step_name='{failed_step_name}'")
+                
                 # Extraire le nom de l'étape courante (sans le préfixe given/when/then)
                 import re
                 current_step_clean = re.sub(r'^(given|when|then)\s+', '', step_text, flags=re.IGNORECASE)
@@ -235,7 +239,8 @@ def build_matrix_adf(tc_tag, user_data):
                     for idx, s in enumerate(steps):
                         s_text = format_step_text(s)
                         s_clean = re.sub(r'^(given|when|then)\s+', '', s_text, flags=re.IGNORECASE)
-                        if s_clean.startswith(failed_step_name):
+                        # Comparaison exacte ou contenue dans l'étape
+                        if failed_step_name in s_clean or s_clean == failed_step_name:
                             failed_step_index = idx
                             break
                 
