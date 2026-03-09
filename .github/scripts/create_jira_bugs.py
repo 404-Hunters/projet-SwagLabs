@@ -494,10 +494,14 @@ def link_to_test_case(bug_key, test_case_key, bug_id):
         method="POST",
     )
     try:
-        with urllib.request.urlopen(link_req):
-            print(f"  🔗 Lie a {test_case_key} (elements associes)")
+        with urllib.request.urlopen(link_req) as resp:
+            print(f"  🔗 Lien créé : {bug_key} ↔ {test_case_key} (HTTP {resp.status})")
+    except urllib.error.HTTPError as e:
+        error_body = e.read().decode("utf-8", errors="ignore")
+        print(f"  ⚠️  Erreur HTTP {e.code} lors de la création du lien vers {test_case_key}")
+        print(f"      Détails : {error_body[:300]}")
     except Exception as e:
-        print(f"  ⚠️  Lien echoue vers {test_case_key} : {e}")
+        print(f"  ⚠️  Erreur lors de la création du lien vers {test_case_key} : {type(e).__name__} - {e}")
 
 
 def determine_module(tc_tag):
