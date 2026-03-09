@@ -709,6 +709,15 @@ def process_failure_reports():
             # Upload du screenshot même sur ticket existant (complète ou met à jour)
             if screenshot and os.path.exists(screenshot):
                 upload_attachment(existing_key, screenshot)
+            
+            # Créer le lien vers le test case si absent
+            test_case_key = next(
+                (t.upper() for t in tags if t.upper().startswith("PSD-")),
+                None
+            )
+            if test_case_key and test_case_key != existing_key:
+                link_to_test_case(existing_key, test_case_key, bug_id)
+            
             print(f"⏭️  {existing_key} — {summary} (ticket déjà existant, ignoré)")
             continue
 
