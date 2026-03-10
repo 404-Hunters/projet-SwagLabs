@@ -282,15 +282,27 @@ def upload_attachment(issue_key, file_path):
     with open(file_path, "rb") as f:
         file_content = f.read()
     
-    # Préparer le multipart/form-data
-    boundary = "----WebKitFormBoundary" + base64.b64encode(os.urandom(16)).decode()[:16]
+    # Préparer le multipart/form-data avec boundary simplifié
+    timestamp = str(int(time.time() * 1000))  # millisecondes
+    boundary = f"----WebKitFormBoundary{timestamp}"
     
-    # Encoder le nom de fichier selon RFC 2231 pour gérer les caractères spéciaux
+    # Créer version ASCII simplifiée du filename (fallback pour serveurs anciens)
+    filename_ascii = re.sub(r'[^A-Za-z0-9._-]', '_', filename)
+    filename_ascii = re.sub(r'_{2,}', '_', filename_ascii)  # Éviter underscores multiples
+    
+    # Encoder le nom de fichier selon RFC 2231 (UTF-8 pour caractères spéciaux)
     filename_encoded = urllib.parse.quote(filename, safe='')
+    
+    # Construction du header avec les deux formats de filename
+    content_disposition = (
+        f"Content-Disposition: form-data; name=\"file\"; "
+        f"filename=\"{filename_ascii}\"; "
+        f"filename*=UTF-8''{filename_encoded}"
+    )
     
     body = (
         f"--{boundary}\r\n"
-        f'Content-Disposition: form-data; name="file"; filename="{filename}"; filename*=UTF-8\'\'{filename_encoded}\r\n'
+        f"{content_disposition}\r\n"
         f"Content-Type: {mime_type}\r\n\r\n"
     ).encode('utf-8') + file_content + f"\r\n--{boundary}--\r\n".encode('utf-8')
     
@@ -306,6 +318,9 @@ def upload_attachment(issue_key, file_path):
     # Configuration du retry
     max_retries = 3
     retry_delay = 6  # secondes
+    
+    # Délai anti-rate-limiting (entre uploads)
+    time.sleep(0.5)
     
     req = urllib.request.Request(
         f"{JIRA_BASE}/rest/api/3/issue/{issue_key}/attachments",
@@ -327,8 +342,10 @@ def upload_attachment(issue_key, file_path):
             
             if e.code == 500:
                 if attempt < max_retries - 1:
-                    print(f"  ⚠️  Erreur HTTP 500 (tentative {attempt + 1}/{max_retries}) - retry dans {retry_delay}s...")
-                    time.sleep(retry_delay)
+                    # Augmenter progressivement le délai (backoff exponentiel)
+                    backoff = retry_delay * (2 ** attempt)
+                    print(f"  ⚠️  Erreur HTTP 500 (tentative {attempt + 1}/{max_retries}) - retry dans {backoff}s...")
+                    time.sleep(backoff)
                     continue
                 else:
                     print(f"  ⚠️  Erreur HTTP 500 persistante après {max_retries} tentatives")

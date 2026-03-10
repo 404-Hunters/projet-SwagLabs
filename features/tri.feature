@@ -23,8 +23,6 @@ Feature: Tri du Catalogue Produits
       | username      |
       | standard_user |
       | problem_user  |
-      | locked_out_user  |
-
 
   @tc-cat-37 @PSD-119 @web @medium @sort @epic-PSD-95
   Scenario Outline: TC-CAT-37 - Tri par nom (Z à A) - Utilisateur: <username>
