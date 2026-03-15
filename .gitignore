@@ -184,4 +184,6 @@ run_tests.sh
 allure-results/
 allure*
 
+reports/
+
 screenshots/

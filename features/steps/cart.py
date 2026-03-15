@@ -67,7 +67,8 @@ def step_ajout_tous_produits(context, product_count):
     # Cliquer sur le bouton "Add to cart" pour chaque produit
     for product in products:
         button = product.find_element(*InventoryPageLocators.ADD_TO_CART_BUTTON)
-        assert button is not None, f"Le bouton 'Add to cart' pour le produit '{product.find_element(InventoryPageLocators.PRODUCT_NAME).text}' n'a pas été trouvé"
+        product_name = product.find_element(*InventoryPageLocators.PRODUCT_NAME).text
+        assert button is not None, f"Le bouton 'Add to cart' pour le produit '{product_name}' n'a pas été trouvé"
         button.click()
 
 @then('tous les boutons des produits affichent "{expected_text}"')
@@ -112,5 +113,5 @@ def step_verification_panier_vide(context):
 @then('l\'article "{product_name}" est retiré de la liste du panier')
 def step_verification_article_retiré_panier(context, product_name):
     # Vérifier que l'article n'est plus présent dans le panier
-    cart_item = find_element(context.browser, (By.XPATH, f"//div[@data-test='cart-item-name' and text()='{product_name}']"))
+    cart_item = find_element(context.browser, (By.XPATH, f"//div[@data-test='inventory-item-name' and text()='{product_name}']"))
     assert cart_item is None, f"L'article '{product_name}' est toujours présent dans le panier"

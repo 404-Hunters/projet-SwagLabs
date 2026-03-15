@@ -8,21 +8,26 @@
 Feature: Commande & Tunnel de Commande
 
   Background:
-    Given l'utilisateur est connecté en tant que "standard_user"
+    Given l'utilisateur est connecté avec "<username>" et "secret_sauce"
     And l'utilisateur est sur la page "/inventory.html"
     And l'article "Sauce Labs Backpack" est présent dans le panier
 
   # TC-CHECK-06
-  @TC-CHECK-06 @web @medium @checkout @validation
-  Scenario: Soumission avec tous les champs vides
+  @TC-CHECK-06 @PSD-155 @web @medium @checkout @validation @epic-PSD-94
+  Scenario Outline: TC-CHECK-06 - Soumission avec tous les champs vides - Utilisateur: <username>
     Given l'utilisateur est sur la page "/checkout-step-one.html"
     When l'utilisateur clique sur le bouton "Continue" de la page Checkout "checkout-step-one"
     Then un seul message d'erreur "Error: First Name is required" est affiché
     And l'utilisateur reste sur la page "/checkout-step-one.html"
 
+    Examples:
+      | username      |
+      | standard_user |
+      | problem_user  |
+
   # TC-CHECK-08
-  @TC-CHECK-08 @web @high @checkout @parcours-complet @smoke
-  Scenario: Parcours de commande complet
+  @TC-CHECK-08 @PSD-157 @web @high @checkout @parcours-complet @smoke @epic-PSD-94
+  Scenario Outline: TC-CHECK-08 - Parcours de commande complet - Utilisateur: <username>
     Given l'utilisateur est sur la page "/checkout-step-one.html"
     When l'utilisateur remplit le formulaire de commande:
       | champ           | valeur |
@@ -34,6 +39,11 @@ Feature: Commande & Tunnel de Commande
     When l'utilisateur clique sur le bouton "Finish" de la page Checkout "checkout-step-two"
     Then l'utilisateur est redirigé vers la page "/checkout-complete.html"
     Then le message de confirmation "Thank you for your order!" est affiché
+    
+    Examples:
+      | username      |
+      | standard_user |
+      | problem_user  |
 
   
 

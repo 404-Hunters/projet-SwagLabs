@@ -59,7 +59,8 @@ def step_click_button(context, button_name):
         button.click()
     else:
         raise ValueError(f"Bouton inconnu : {button_name}")
-    
+
+ # Fonction utilitaire interne pour vérifier l'URL (le step équivalent est défini dans common.py)
 def step_verify_url(context, expected_path):
 
     assert wait_for_url_contains(context.browser, expected_path), \

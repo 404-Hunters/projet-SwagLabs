@@ -6,6 +6,7 @@ from .locators import (
     InventoryPageLocators,
     CartPageLocators,
     CheckoutPageLocators,
+    ProductPageLocators,
 )
 from .helpers import (
     wait_for_element,
@@ -30,11 +31,11 @@ from .helpers import (
 
 __all__ = [
     # Locators
-    'LoginLocators',
-    'InventoryLocators',
-    'CartLocators',
-    'CheckoutLocators',
-    'ProductDetailPageLocators',
+    'LoginPageLocators',
+    'InventoryPageLocators',
+    'CartPageLocators',
+    'CheckoutPageLocators',
+    'ProductPageLocators',
     # Helpers
     'wait_for_element',
     'wait_for_element_clickable',

@@ -7,7 +7,7 @@ on:
   pull_request:
     branches:
       - develop
-  workflow_dispatch: # Déclenchement manuel depuis l'interface GitHub
+  workflow_dispatch:
 
 env:
   PYTHON_VERSION: "3.14"
@@ -25,7 +25,7 @@ jobs:
       - name: Checkout du dépôt
         uses: actions/checkout@v4
 
-      # ── 2. Installation de Python 3.14 ───────────────────────────────────
+      # ── 2. Installation de Python ────────────────────────────────────────
       - name: Configurer Python ${{ env.PYTHON_VERSION }}
         uses: actions/setup-python@v5
         with:
@@ -56,7 +56,7 @@ jobs:
             --outfile reports/allure-results \
             --junit \
             --junit-directory reports/junit \
-            || true  # Garantit la génération des rapports même en cas d'échec
+            || true
         env:
           HEADLESS: "true"
           DISPLAY: ""
@@ -70,14 +70,14 @@ jobs:
           check_name: "Behave – Chrome"
           fail_on_failure: false
 
-      # ── 7. Upload des artefacts bruts Allure ─────────────────────────────
+      # ── 7. Upload des artefacts Allure ───────────────────────────────────
       - name: Upload des résultats Allure bruts
         uses: actions/upload-artifact@v4
         if: always()
         with:
           name: allure-results
           path: reports/allure-results/
-          retention-days: 1 # Temporaire, utilisé par le job "report"
+          retention-days: 1
 
       # ── 8. Upload des artefacts divers (screenshots, logs) ───────────────
       - name: Upload des artefacts de test
@@ -90,14 +90,125 @@ jobs:
             logs/
           retention-days: 14
 
-  # ── Job séparé : génération du rapport + déploiement GitHub Pages ─────────
+      # ── 9. Upload des rapports d'échec JSON ──────────────────────────────
+      - name: Upload des rapports d'échec JSON
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: failure-reports
+          path: reports/failures/
+          retention-days: 7
+
+      # ── 9b. Upload des résultats complets (pass + fail) pour la matrice ──
+      - name: Upload des résultats complets
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: test-results
+          path: reports/results/
+          retention-days: 7
+
+  # ── Job : mise à jour des matrices d'exécution sur les tickets Jira ────────
+  matrix-execution-jira:
+    name: Matrices d'exécution Jira
+    runs-on: ubuntu-latest
+    needs: test
+    if: always()
+
+    steps:
+      # ── 10. Checkout du code (pour récupérer le script) ───────────────────
+      - name: Checkout du code (pour récupérer le script)
+        uses: actions/checkout@v4
+        with:
+          sparse-checkout: |
+            .github/scripts/
+
+      # ── 11. Récupération des résultats complets (pass + fail) ─────────────
+      - name: Télécharger les résultats complets
+        uses: actions/download-artifact@v4
+        continue-on-error: true
+        with:
+          name: test-results
+          path: reports/results/
+
+      # ── 11b. Récupération des rapports d'échec (pour identifier les étapes échouées) ───
+      - name: Télécharger les rapports d'échec
+        uses: actions/download-artifact@v4
+        continue-on-error: true
+        with:
+          name: failure-reports
+          path: reports/failures/
+
+      # ── 12. Mise à jour de la matrice sur chaque ticket de cas de test ────
+      - name: Mettre à jour les matrices d'exécution Jira
+        run: python3 .github/scripts/update_jira_matrices.py
+        env:
+          JIRA_BASE_URL: ${{ secrets.JIRA_BASE_URL }}
+          JIRA_USER_EMAIL: ${{ secrets.JIRA_USER_EMAIL }}
+          JIRA_API_TOKEN: ${{ secrets.JIRA_API_TOKEN }}
+          GITHUB_ACTOR: ${{ github.actor }}
+
+  # ── Job : création d'un ticket de bug par échec ──────────────────────────
+  jira:
+    name: Ticket de bug Jira
+    runs-on: ubuntu-latest
+    needs: matrix-execution-jira
+    if: always()
+
+    steps:
+      # ── 12. Checkout du code (pour récupérer le script) ───────────────────
+      - name: Checkout du code (pour récupérer le script)
+        uses: actions/checkout@v4
+        with:
+          sparse-checkout: |
+            .github/scripts/
+
+      # ── 13. Récupération des rapports d'échec JSON ───────────────────────
+      - name: Télécharger les rapports d'échec
+        uses: actions/download-artifact@v4
+        continue-on-error: true
+        with:
+          name: failure-reports
+          path: reports/failures/
+
+      # ── 13b. Récupération des screenshots ─────────────────────────────────
+      - name: Télécharger les screenshots
+        uses: actions/download-artifact@v4
+        continue-on-error: true
+        with:
+          name: test-artifacts
+          path: .
+
+      # ── 14. Vérifier s'il y a des échecs ─────────────────────────────────
+      - name: Vérifier la présence d'échecs
+        id: check
+        run: |
+          COUNT=$(find reports/failures -name "*.json" 2>/dev/null | wc -l)
+          echo "count=$COUNT" >> $GITHUB_OUTPUT
+          echo "$COUNT scénario(s) en échec détecté(s)"
+
+      # ── 15. Créer un ticket de bug par échec ─────────────────────────────
+      - name: Créer les tickets de bug Jira
+        if: steps.check.outputs.count > 0
+        run: python3 .github/scripts/create_jira_bugs.py
+        env:
+          JIRA_BASE_URL: ${{ secrets.JIRA_BASE_URL }}
+          JIRA_USER_EMAIL: ${{ secrets.JIRA_USER_EMAIL }}
+          JIRA_API_TOKEN: ${{ secrets.JIRA_API_TOKEN }}
+          GITHUB_REF_NAME: ${{ github.ref_name }}
+          GITHUB_SHA: ${{ github.sha }}
+          GITHUB_ACTOR: ${{ github.actor }}
+          GITHUB_REPOSITORY_OWNER: ${{ github.repository_owner }}
+          GITHUB_REPOSITORY: ${{ github.event.repository.name }}
+
+  # ── Job séparé : rapport Allure + GitHub Pages ────────────────────────────
   report:
     name: Rapport Allure + GitHub Pages
     runs-on: ubuntu-latest
-    needs: test # Attend la fin du job "test"
+    needs: jira
     if: always()
     permissions:
-      contents: write # ✅ Requis pour pousser sur la branche gh-pages
+      contents: write
 
     steps:
       - name: Checkout du dépôt
@@ -109,7 +220,6 @@ jobs:
           name: allure-results
           path: reports/allure-results
 
-      # Génère le rapport HTML Allure et conserve l'historique des 10 derniers runs
       - name: Générer le rapport Allure
         uses: simple-elf/allure-report-action@master
         if: always()
@@ -118,10 +228,6 @@ jobs:
           allure_history: allure-history
           keep_reports: 10
 
-      # Publie le rapport HTML sur GitHub Pages
-      # → accessible sur https://<org>.github.io/<repo>/
-      # ⚠️  Activer GitHub Pages dans Settings → Pages
-      #     Source : "Deploy from a branch" → branche "gh-pages"
       - name: Déployer le rapport sur GitHub Pages
         uses: peaceiris/actions-gh-pages@v4
         if: always()

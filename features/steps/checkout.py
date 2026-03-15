@@ -70,7 +70,7 @@ def step_remplir_panier_produits(context):
         button_element = localiser_cta_produit(context, product_name)
         assert button_element is not None, f"Le bouton d'ajout pour le produit '{product_name}' n'a pas été trouvé"
         
-        for _ in range(quantity):
+        if quantity > 0:
             button_element.click()
 
 @then('le total des prix de la commande sans taxe affiche "{expected_total}"')
