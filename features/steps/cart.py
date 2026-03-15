@@ -113,5 +113,5 @@ def step_verification_panier_vide(context):
 @then('l\'article "{product_name}" est retiré de la liste du panier')
 def step_verification_article_retiré_panier(context, product_name):
     # Vérifier que l'article n'est plus présent dans le panier
-    cart_item = find_element(context.browser, (By.XPATH, f"//div[@data-test='cart-item-name' and text()='{product_name}']"))
+    cart_item = find_element(context.browser, (By.XPATH, f"//div[@data-test='inventory-item-name' and text()='{product_name}']"))
     assert cart_item is None, f"L'article '{product_name}' est toujours présent dans le panier"

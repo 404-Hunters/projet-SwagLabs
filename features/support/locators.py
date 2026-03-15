@@ -47,6 +47,7 @@ class CartPageLocators:
     REMOVE_BUTTON = (By.CSS_SELECTOR, "button[data-test='remove']")
     CHECKOUT_BUTTON = (By.CSS_SELECTOR, "button[data-test='checkout']")
     CONTINUE_SHOPPING = (By.ID, "continue-shopping")
+    
 class CheckoutPageLocators:
     """Locators pour les pages de checkout"""   
     FIRST_NAME_INPUT = (By.CSS_SELECTOR, "input[data-test='firstName']")

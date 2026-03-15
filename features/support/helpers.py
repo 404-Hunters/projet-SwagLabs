@@ -7,6 +7,8 @@ from selenium.common.exceptions import TimeoutException, NoSuchElementException
 from support.locators import InventoryPageLocators
 from selenium.webdriver.common.by import By
 
+default_timeout = 5  # Temps d'attente par défaut pour les fonctions d'attente
+
 
 def find_element(driver, locator):
     """
@@ -45,7 +47,7 @@ def find_elements(driver, locator):
         return []
 
 
-def wait_for_element(driver, locator, timeout=2):
+def wait_for_element(driver, locator, timeout=default_timeout):
     """
     Attend qu'un élément soit présent dans le DOM et le retourne
     
@@ -67,7 +69,7 @@ def wait_for_element(driver, locator, timeout=2):
         return None
     
 
-def wait_for_elements(driver, locator, timeout=2):
+def wait_for_elements(driver, locator, timeout=default_timeout):
     """
     Attend que plusieurs éléments soient visibles
     
@@ -87,7 +89,7 @@ def wait_for_elements(driver, locator, timeout=2):
         print(f"Aucun élément visible après {timeout} secondes: {locator}")
         return []
 
-def wait_for_element_clickable(driver, locator, timeout=2):
+def wait_for_element_clickable(driver, locator, timeout=default_timeout):
     """
     Attend qu'un élément soit cliquable
     
@@ -109,7 +111,7 @@ def wait_for_element_clickable(driver, locator, timeout=2):
         return None
 
 
-def wait_for_element_visible(driver, locator, timeout=2):
+def wait_for_element_visible(driver, locator, timeout=default_timeout):
     """
     Attend qu'un élément soit visible
     
@@ -149,7 +151,7 @@ def is_element_present(driver, locator):
         return False
 
 
-def get_element_text(driver, locator, timeout=2):
+def get_element_text(driver, locator, timeout=default_timeout):
     """
     Récupère le texte d'un élément
     
@@ -164,7 +166,7 @@ def get_element_text(driver, locator, timeout=2):
     element = wait_for_element(driver, locator, timeout)
     return element.text if element else ""
 
-def wait_for_text_in_element(driver, locator, expected_text, timeout=2):
+def wait_for_text_in_element(driver, locator, expected_text, timeout=default_timeout):
     """
     Vérifie qu'un texte spécifique est présent dans un élément
 
@@ -180,7 +182,7 @@ def wait_for_text_in_element(driver, locator, expected_text, timeout=2):
         return False
 
 
-def click_element(driver, locator, timeout=2):
+def click_element(driver, locator, timeout=default_timeout):
     """
     Clique sur un élément après avoir attendu qu'il soit cliquable
     
@@ -199,7 +201,7 @@ def click_element(driver, locator, timeout=2):
     return False
 
 
-def send_keys_to_element(driver, locator, text, timeout=2):
+def send_keys_to_element(driver, locator, text, timeout=default_timeout):
     """
     Envoie du texte à un élément input
     
@@ -219,7 +221,7 @@ def send_keys_to_element(driver, locator, text, timeout=2):
         return element.get_attribute("value")
     return None
 
-def wait_for_url_contains(driver, expected_url_part, timeout=2):
+def wait_for_url_contains(driver, expected_url_part, timeout=default_timeout):
     """
     Attend que l'URL actuelle contienne une partie spécifique
     
