@@ -67,7 +67,8 @@ def step_ajout_tous_produits(context, product_count):
     # Cliquer sur le bouton "Add to cart" pour chaque produit
     for product in products:
         button = product.find_element(*InventoryPageLocators.ADD_TO_CART_BUTTON)
-        assert button is not None, f"Le bouton 'Add to cart' pour le produit '{product.find_element(InventoryPageLocators.PRODUCT_NAME).text}' n'a pas été trouvé"
+        product_name = product.find_element(*InventoryPageLocators.PRODUCT_NAME).text
+        assert button is not None, f"Le bouton 'Add to cart' pour le produit '{product_name}' n'a pas été trouvé"
         button.click()
 
 @then('tous les boutons des produits affichent "{expected_text}"')

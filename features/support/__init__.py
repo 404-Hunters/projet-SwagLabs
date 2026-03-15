@@ -30,11 +30,10 @@ from .helpers import (
 
 __all__ = [
     # Locators
-    'LoginLocators',
-    'InventoryLocators',
-    'CartLocators',
-    'CheckoutLocators',
-    'ProductDetailPageLocators',
+    'LoginPageLocators',
+    'InventoryPageLocators',
+    'CartPageLocators',
+    'CheckoutPageLocators',
     # Helpers
     'wait_for_element',
     'wait_for_element_clickable',
